@@ -3,6 +3,7 @@
 # Called by cron daily at 2:53
 
 cd /home/den/job-search
+[ -f /home/den/job-search/.env ] && export $(grep -v '^#' /home/den/job-search/.env | xargs)
 LOG=/home/den/job-search/app.log
 
 # Check if server actually responds, not just if process exists

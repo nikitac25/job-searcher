@@ -4,6 +4,8 @@
 
 export HOME=/home/den
 export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+# Load secrets from .env (not tracked by git)
+[ -f /home/den/job-search/.env ] && export $(grep -v '^#' /home/den/job-search/.env | xargs)
 
 cd /home/den/job-search || exit 1
 
