@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect rx='20' width='100' height='100' fill='%236c63ff'/><text x='50' y='68' font-size='55' text-anchor='middle' fill='white'>V</text></svg>">
+<title>Вакансії</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --card: #141420;
+    --panel: #0e0e1a;
+    --border: #252538;
+    --text: #e0e0e0;
+    --muted: #777;
+    --accent: #6c63ff;
+    --link: #74b9ff;
+    --danger: #ff4757;
+    --danger-bg: rgba(255,71,87,.1);
+    --green: #2ed573;
+    --yellow: #ffa502;
+    --red: #ff4757;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 12px;
+    padding-bottom: 60px;
+    max-width: 800px;
+    margin: 0 auto;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header { text-align: center; padding: 16px 0 4px; }
+  header h1 { font-size: 1.2rem; font-weight: 600; }
+  .meta { color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
+
+  /* Filters */
+  .filters {
+    display: flex; gap: 6px; padding: 12px 0 4px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-btn {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--muted); font-size: 0.72rem; padding: 5px 10px;
+    border-radius: 16px; white-space: nowrap; cursor: pointer;
+    transition: all .2s;
+  }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* Sort controls */
+  .toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0 2px; gap: 8px;
+  }
+  .sort-group {
+    display: flex; gap: 4px; align-items: center;
+  }
+  .sort-label {
+    color: var(--muted); font-size: 0.68rem; margin-right: 2px;
+  }
+  .sort-btn {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--muted); font-size: 0.68rem; padding: 3px 8px;
+    border-radius: 4px; cursor: pointer; transition: all .2s;
+    white-space: nowrap;
+  }
+  .sort-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .sort-btn:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+
+  /* Search */
+  .search-box {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--text); font-size: 0.75rem; padding: 4px 10px;
+    border-radius: 6px; outline: none; width: 160px;
+    transition: border-color .2s;
+  }
+  .search-box::placeholder { color: var(--muted); }
+  .search-box:focus { border-color: var(--accent); }
+
+  /* Section */
+  .section { margin-top: 18px; }
+  .section-hdr {
+    font-size: 0.9rem; font-weight: 600; color: var(--accent);
+    padding: 6px 0; border-bottom: 1px solid var(--border);
+    margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .section-count {
+    background: var(--border); color: var(--muted);
+    font-size: 0.65rem; padding: 2px 7px; border-radius: 10px;
+  }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .card-header:active { background: rgba(255,255,255,.02); }
+
+  .score-badge {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 700;
+  }
+  .score-high { background: rgba(46,213,115,.2); color: var(--green); }
+  .score-mid { background: rgba(255,165,2,.2); color: var(--yellow); }
+  .score-low { background: rgba(255,71,87,.15); color: var(--red); }
+  .score-none { background: var(--border); color: var(--muted); }
+
+  .card-info { flex: 1; min-width: 0; padding-right: 36px; }
+
+  .card-title {
+    color: var(--link); text-decoration: none;
+    font-size: 0.85rem; line-height: 1.3;
+    display: block; word-wrap: break-word;
+  }
+  .card-title:hover { text-decoration: underline; }
+
+  .card-meta {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-top: 5px; font-size: 0.68rem; color: var(--muted);
+  }
+  .tag {
+    background: var(--border); padding: 1px 6px;
+    border-radius: 4px; white-space: nowrap;
+  }
+  .tag-date { background: rgba(108,99,255,.15); color: var(--accent); }
+  .tag-inactive { color: var(--red); background: var(--danger-bg); }
+  .tag-salary { background: rgba(46,213,115,.12); color: var(--green); }
+  .tag-new {
+    background: rgba(0,168,255,.2); color: #00a8ff;
+    font-weight: 600; animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .6; }
+  }
+
+  .card-actions {
+    display: flex; gap: 2px;
+    position: absolute; top: 8px; right: 8px;
+  }
+
+  .btn-icon {
+    width: 30px; height: 30px; border: none;
+    background: transparent; color: var(--muted);
+    font-size: 1rem; cursor: pointer; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .btn-icon:hover { background: var(--border); color: var(--text); }
+  .btn-fav { font-size: 1.1rem; }
+  .btn-fav.faved { color: var(--yellow); }
+  .btn-fav:hover { background: rgba(255,165,2,.12); color: var(--yellow); }
+  .btn-del:hover { background: var(--danger-bg); color: var(--danger); }
+  .btn-del:active { transform: scale(.9); }
+  .tag-fav { background: rgba(255,165,2,.15); color: var(--yellow); }
+  .tag-note { background: rgba(108,99,255,.15); color: var(--accent); font-size: 0.62rem; }
+  .tag-applied { background: rgba(108,99,255,.18); color: var(--accent); }
+  .tag-interview { background: rgba(46,213,115,.18); color: var(--green); }
+  .tag-offer { background: rgba(46,213,115,.3); color: #2ed573; font-weight: 600; }
+  .tag-rejected { background: rgba(255,71,87,.12); color: var(--muted); text-decoration: line-through; }
+
+  /* Status selector */
+  .status-sel {
+    font-size: 0.65rem; padding: 2px 4px;
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--muted); border-radius: 4px;
+    cursor: pointer; outline: none;
+    -webkit-appearance: none; appearance: none;
+  }
+  .status-sel:focus { border-color: var(--accent); }
+  .status-sel option { background: var(--card); color: var(--text); }
+
+  /* Notes */
+  .note-area {
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .note-label {
+    font-size: 0.68rem; color: var(--accent);
+    font-weight: 600; text-transform: uppercase;
+    letter-spacing: .5px; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .note-edit-btn {
+    background: none; border: none; color: var(--muted);
+    font-size: 0.65rem; cursor: pointer; padding: 0 4px;
+    text-decoration: underline; text-underline-offset: 2px;
+  }
+  .note-edit-btn:hover { color: var(--accent); }
+  .note-text {
+    font-size: 0.78rem; line-height: 1.5; color: var(--text);
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .note-text.empty { color: var(--muted); font-style: italic; }
+  .note-input {
+    width: 100%; min-height: 50px; max-height: 120px;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font-size: 0.78rem; line-height: 1.5;
+    padding: 6px 8px; border-radius: 6px; resize: vertical;
+    font-family: inherit; outline: none;
+  }
+  .note-input:focus { border-color: var(--accent); }
+  .note-input::placeholder { color: var(--muted); }
+  .note-save-row {
+    display: flex; gap: 6px; margin-top: 4px; justify-content: flex-end;
+  }
+  .note-save-btn, .note-cancel-btn {
+    font-size: 0.68rem; padding: 3px 10px; border-radius: 4px;
+    cursor: pointer; border: 1px solid var(--border);
+    background: var(--card); color: var(--muted);
+  }
+  .note-save-btn { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .note-save-btn:hover { opacity: .9; }
+  .note-cancel-btn:hover { border-color: var(--accent); color: var(--text); }
+  .btn-note { font-size: 0.85rem; }
+  .btn-note.has-note { color: var(--accent); }
+
+  /* Chevron — left side */
+  .chevron {
+    flex-shrink: 0;
+    width: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; color: var(--muted);
+    transition: transform .25s;
+    align-self: center;
+  }
+  .card.open .chevron { transform: rotate(180deg); }
+
+  /* Accordion panel */
+  .card-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .3s ease, padding .3s ease;
+  }
+  .card.open .card-panel {
+    max-height: 300px;
+  }
+
+  .panel-inner {
+    padding: 0 12px 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .panel-label {
+    font-size: 0.68rem; color: var(--accent);
+    font-weight: 600; margin: 10px 0 4px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .panel-text {
+    font-size: 0.8rem; line-height: 1.5;
+    color: var(--text);
+  }
+  .panel-no-analysis {
+    font-size: 0.78rem; color: var(--muted);
+    font-style: italic; padding: 8px 0;
+  }
+
+  /* Keyboard focus */
+  .card.kb-focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(108,99,255,.3);
+  }
+
+  /* Delete animation */
+  .card.deleting {
+    opacity: 0; max-height: 0; margin: 0;
+    border: 0; transition: all .3s;
+  }
+
+  /* Status bar */
+  .status-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--card); border-top: 1px solid var(--border);
+    padding: 8px; text-align: center;
+    font-size: 0.72rem; color: var(--muted); z-index: 10;
+  }
+  .dot {
+    display: inline-block; width: 6px; height: 6px;
+    border-radius: 50%; margin-right: 4px; vertical-align: middle;
+  }
+  .dot-ok { background: var(--green); }
+  .dot-err { background: var(--red); }
+  .kb-hint {
+    float: right; font-size: 0.65rem; color: var(--muted);
+    opacity: .6; cursor: pointer;
+  }
+  .kb-hint:hover { opacity: 1; color: var(--accent); }
+
+  /* Keyboard shortcuts overlay */
+  .kb-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    z-index: 100; display: flex; align-items: center; justify-content: center;
+  }
+  .kb-modal {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px 24px; max-width: 340px; width: 90%;
+  }
+  .kb-modal h3 {
+    font-size: 0.9rem; color: var(--accent); margin-bottom: 12px;
+    text-align: center;
+  }
+  .kb-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; font-size: 0.8rem;
+  }
+  .kb-key {
+    background: var(--border); padding: 2px 8px; border-radius: 4px;
+    font-family: monospace; font-size: 0.75rem; color: var(--text);
+    min-width: 24px; text-align: center;
+  }
+  .kb-desc { color: var(--muted); }
+
+  .empty { color: var(--muted); text-align: center; padding: 40px 0; font-size: .9rem; }
+
+  /* Stats panel */
+  .stats-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .stat-card.wide { grid-column: 1 / -1; }
+  .stat-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .stat-value .sub {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .score-bar {
+    display: flex;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 6px;
+    gap: 2px;
+  }
+  .score-bar-seg {
+    border-radius: 3px;
+    transition: width .3s;
+  }
+  .score-bar-legend {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+    font-size: 0.62rem;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+  .legend-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    margin-right: 3px;
+    vertical-align: middle;
+  }
+  .sources-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .source-chip {
+    background: var(--border);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+  .source-chip b {
+    color: var(--text);
+    font-weight: 600;
+    margin-left: 3px;
+  }
+  .stats-toggle {
+    background: none; border: none;
+    color: var(--accent); font-size: 0.72rem;
+    cursor: pointer; padding: 4px 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .stats-toggle:hover { color: var(--link); }
+
+  /* Action buttons row */
+  .actions-row {
+    display: flex; gap: 6px; padding: 4px 0;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--muted); font-size: 0.68rem; padding: 4px 10px;
+    border-radius: 6px; cursor: pointer; transition: all .2s;
+    white-space: nowrap;
+  }
+  .action-btn:hover { border-color: var(--accent); color: var(--text); }
+  .action-btn:active { transform: scale(.97); }
+  .action-btn.hidden { display: none; }
+
+  @media (min-width: 600px) {
+    body { padding: 20px 20px 60px; }
+    header h1 { font-size: 1.4rem; }
+    .card-header { padding: 14px 16px; }
+    .panel-inner { padding: 0 16px 14px; }
+    .card-title { font-size: .9rem; }
+    .stats-panel { grid-template-columns: 1fr 1fr 1fr; }
+    .stat-card.wide { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Вакансії UI/UX</h1>
+  <div class="meta" id="meta"></div>
+</header>
+
+<button class="stats-toggle" id="statsToggle" onclick="toggleStats()">Статистика ▼</button>
+<div id="statsPanel" style="display:none"></div>
+<div class="filters" id="filters"></div>
+<div class="toolbar">
+  <div class="sort-group">
+    <span class="sort-label">Sort:</span>
+    <button class="sort-btn active" onclick="setSort('default')">Default</button>
+    <button class="sort-btn" onclick="setSort('score')">Score ↓</button>
+    <button class="sort-btn" onclick="setSort('date')">Date ↓</button>
+  </div>
+  <input class="search-box" type="text" id="searchBox" placeholder="Пошук..." oninput="onSearch(this.value)">
+</div>
+<div class="actions-row">
+  <button class="action-btn hidden" id="markAllSeenBtn" onclick="markAllSeen()">✓ Позначити всі як переглянуті</button>
+  <button class="action-btn" id="expandCollapseBtn" onclick="toggleExpandAll()">↕ Розгорнути всі</button>
+  <button class="action-btn" onclick="exportCSV()">📥 Експорт CSV</button>
+</div>
+<div id="app"></div>
+
+<div class="status-bar" id="statusBar">
+  <span class="dot dot-ok"></span> Підключено
+  <span class="kb-hint" onclick="showKbHelp()" title="Keyboard shortcuts">⌨ ?</span>
+</div>
+
+<script>
+const app = document.getElementById('app');
+const filtersEl = document.getElementById('filters');
+const REFRESH = 30000;
+const SKIP = ['Пошукові запити для самостійного моніторингу'];
+
+let allData = [];
+let activeFilter = 'all';
+let activeSort = 'default';
+let searchQuery = '';
+let openCards = new Set();
+
+// Seen tracking via localStorage
+function getSeenUrls() {
+  try { return new Set(JSON.parse(localStorage.getItem('seenUrls') || '[]')); }
+  catch { return new Set(); }
+}
+function markSeen(url) {
+  const seen = getSeenUrls();
+  seen.add(url);
+  localStorage.setItem('seenUrls', JSON.stringify([...seen]));
+}
+function isNew(url) { return !getSeenUrls().has(url); }
+
+// Favorites tracking via localStorage
+function getFavUrls() {
+  try { return new Set(JSON.parse(localStorage.getItem('favUrls') || '[]')); }
+  catch { return new Set(); }
+}
+function toggleFav(url) {
+  const favs = getFavUrls();
+  if (favs.has(url)) favs.delete(url); else favs.add(url);
+  localStorage.setItem('favUrls', JSON.stringify([...favs]));
+  renderFilters();
+  render();
+  if (statsVisible) renderStats();
+}
+function isFav(url) { return getFavUrls().has(url); }
+
+// Application status tracking via localStorage
+const STATUS_OPTIONS = ['—', 'Applied', 'Interview', 'Offer', 'Rejected'];
+function getStatuses() {
+  try { return JSON.parse(localStorage.getItem('vacancyStatuses') || '{}'); }
+  catch { return {}; }
+}
+function setStatus(url, status) {
+  const statuses = getStatuses();
+  if (status === '—') delete statuses[url]; else statuses[url] = status;
+  localStorage.setItem('vacancyStatuses', JSON.stringify(statuses));
+  renderFilters();
+  render();
+  if (statsVisible) renderStats();
+}
+function getStatus(url) { return getStatuses()[url] || ''; }
+
+// Notes tracking via localStorage
+function getNotes() {
+  try { return JSON.parse(localStorage.getItem('vacancyNotes') || '{}'); }
+  catch { return {}; }
+}
+function getNote(url) { return getNotes()[url] || ''; }
+function saveNote(url, text) {
+  const notes = getNotes();
+  if (text.trim()) notes[url] = text.trim(); else delete notes[url];
+  localStorage.setItem('vacancyNotes', JSON.stringify(notes));
+  renderFilters();
+  render();
+  if (statsVisible) renderStats();
+}
+function hasNote(url) { return !!getNote(url); }
+
+function startEditNote(url) {
+  const card = document.querySelector(`.card[data-url="${CSS.escape(url)}"]`) || document.querySelector(`.card[data-url="${url}"]`);
+  if (!card) return;
+  // Make sure card is open
+  if (!card.classList.contains('open')) {
+    const hdr = card.querySelector('.card-header');
+    if (hdr) toggle(hdr);
+  }
+  const noteArea = card.querySelector('.note-area');
+  if (!noteArea) return;
+  const current = getNote(url);
+  noteArea.innerHTML = `
+    <div class="note-label">Нотатка</div>
+    <textarea class="note-input" placeholder="Додати нотатку...">${esc(current)}</textarea>
+    <div class="note-save-row">
+      <button class="note-cancel-btn" onclick="render()">Скасувати</button>
+      <button class="note-save-btn" onclick="saveNoteFromInput('${escA(url)}')">Зберегти</button>
+    </div>`;
+  const textarea = noteArea.querySelector('.note-input');
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  // Save on Ctrl+Enter
+  textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      saveNoteFromInput(url);
+    }
+    if (e.key === 'Escape') { e.preventDefault(); render(); }
+  });
+}
+
+function saveNoteFromInput(url) {
+  const card = document.querySelector(`.card[data-url="${CSS.escape(url)}"]`) || document.querySelector(`.card[data-url="${url}"]`);
+  if (!card) return;
+  const textarea = card.querySelector('.note-input');
+  if (textarea) saveNote(url, textarea.value);
+}
+
+async function load() {
+  try {
+    const r = await fetch('/api/vacancies');
+    allData = await r.json();
+    renderFilters();
+    render();
+    updateMarkAllSeenBtn();
+    if (statsVisible) renderStats();
+    status('ok');
+  } catch(e) { status('err'); }
+}
+
+function renderFilters() {
+  const scores = {all:0, hot:0, ok:0, skip:0, new:0, fav:0, notes:0, applied:0, interview:0, offer:0, rejected:0};
+  const favs = getFavUrls();
+  const statuses = getStatuses();
+  const notes = getNotes();
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      scores.all++;
+      if (isNew(v.url)) scores.new++;
+      if (favs.has(v.url)) scores.fav++;
+      if (notes[v.url]) scores.notes++;
+      const st = statuses[v.url];
+      if (st === 'Applied') scores.applied++;
+      else if (st === 'Interview') scores.interview++;
+      else if (st === 'Offer') scores.offer++;
+      else if (st === 'Rejected') scores.rejected++;
+      if (v.score === null) {}
+      else if (v.score >= 6) scores.hot++;
+      else if (v.score >= 4) scores.ok++;
+      else scores.skip++;
+    }
+  }
+  const pipelineCount = scores.applied + scores.interview + scores.offer + scores.rejected;
+  filtersEl.innerHTML = `
+    <button class="filter-btn ${activeFilter==='all'?'active':''}" onclick="setFilter('all')">Всі ${scores.all}</button>
+    <button class="filter-btn ${activeFilter==='fav'?'active':''}" onclick="setFilter('fav')">★ Fav ${scores.fav}</button>
+    <button class="filter-btn ${activeFilter==='new'?'active':''}" onclick="setFilter('new')">New ${scores.new}</button>
+    <button class="filter-btn ${activeFilter==='hot'?'active':''}" onclick="setFilter('hot')">Hot ${scores.hot}</button>
+    <button class="filter-btn ${activeFilter==='ok'?'active':''}" onclick="setFilter('ok')">OK ${scores.ok}</button>
+    <button class="filter-btn ${activeFilter==='skip'?'active':''}" onclick="setFilter('skip')">Skip ${scores.skip}</button>
+    <button class="filter-btn ${activeFilter==='notes'?'active':''}" onclick="setFilter('notes')">✎ Notes ${scores.notes}</button>
+    <button class="filter-btn ${activeFilter==='pipeline'?'active':''}" onclick="setFilter('pipeline')">Pipeline ${pipelineCount}</button>
+  `;
+}
+
+function setFilter(f) { activeFilter = f; renderFilters(); render(); }
+
+function setSort(s) {
+  activeSort = s;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.sort-btn[onclick="setSort('${s}')"]`).classList.add('active');
+  render();
+}
+
+function onSearch(q) { searchQuery = q.toLowerCase().trim(); render(); }
+
+function parseDate(v) {
+  const d = v.published || v.date || '';
+  if (!d) return 0;
+  // Handle DD.MM or DD.MM.YYYY
+  const parts = d.split('.');
+  if (parts.length === 2) return parseInt(parts[1]) * 100 + parseInt(parts[0]);
+  if (parts.length === 3) return parseInt(parts[2]) * 10000 + parseInt(parts[1]) * 100 + parseInt(parts[0]);
+  return 0;
+}
+
+function sortItems(items) {
+  if (activeSort === 'default') return items;
+  const sorted = [...items];
+  if (activeSort === 'score') {
+    sorted.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  } else if (activeSort === 'date') {
+    sorted.sort((a, b) => parseDate(b) - parseDate(a));
+  }
+  return sorted;
+}
+
+function matchesSearch(v) {
+  if (!searchQuery) return true;
+  const text = [v.title, v.type, v.summary, v.salary, v.remote, getNote(v.url)].join(' ').toLowerCase();
+  return text.includes(searchQuery);
+}
+
+function passFilter(v) {
+  if (activeFilter === 'all') return true;
+  if (activeFilter === 'fav') return isFav(v.url);
+  if (activeFilter === 'new') return isNew(v.url);
+  if (activeFilter === 'hot') return v.score >= 6;
+  if (activeFilter === 'ok') return v.score >= 4 && v.score < 6;
+  if (activeFilter === 'skip') return v.score !== null && v.score < 4;
+  if (activeFilter === 'notes') return hasNote(v.url);
+  if (activeFilter === 'pipeline') return !!getStatus(v.url);
+  return true;
+}
+
+function scoreClass(s) {
+  if (s === null) return 'score-none';
+  if (s >= 6) return 'score-high';
+  if (s >= 4) return 'score-mid';
+  return 'score-low';
+}
+
+function getDateTag(v) {
+  const d = v.published || v.date;
+  if (!d) return '';
+  return `<span class="tag tag-date">${esc(d)}</span>`;
+}
+
+function statusTag(url) {
+  const st = getStatus(url);
+  if (!st) return '';
+  const cls = st === 'Applied' ? 'tag-applied' : st === 'Interview' ? 'tag-interview' : st === 'Offer' ? 'tag-offer' : st === 'Rejected' ? 'tag-rejected' : '';
+  return `<span class="tag ${cls}">${esc(st)}</span>`;
+}
+
+function render() {
+  let html = '';
+  let total = 0;
+
+  for (const section of allData) {
+    if (SKIP.includes(section.name)) continue;
+    const filtered = sortItems(section.items.filter(v => passFilter(v) && matchesSearch(v)));
+    if (!filtered.length) continue;
+    total += filtered.length;
+
+    html += `<div class="section">
+      <div class="section-hdr">${esc(section.name)}<span class="section-count">${filtered.length}</span></div>`;
+
+    for (const v of filtered) {
+      const sc = v.score !== null ? v.score + '/10' : '?';
+      const isOpen = openCards.has(v.url);
+
+      html += `
+      <div class="card ${isOpen ? 'open' : ''}" data-url="${escA(v.url)}">
+        <div class="card-header" onclick="toggle(this)">
+          <div class="chevron">▼</div>
+          <div class="score-badge ${scoreClass(v.score)}">${sc}</div>
+          <div class="card-info">
+            <a class="card-title" href="${escA(v.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(v.title)}</a>
+            <div class="card-meta">
+              ${v.type ? `<span class="tag">${esc(v.type)}</span>` : ''}
+              ${v.remote ? `<span class="tag">${esc(v.remote)}</span>` : ''}
+              ${v.salary && v.salary !== 'Не вказана' ? `<span class="tag tag-salary">${esc(v.salary)}</span>` : ''}
+              ${getDateTag(v)}
+              ${v.status === 'inactive' ? '<span class="tag tag-inactive">inactive</span>' : ''}
+              ${isNew(v.url) ? '<span class="tag tag-new">new</span>' : ''}
+              ${isFav(v.url) ? '<span class="tag tag-fav">★ fav</span>' : ''}
+              ${statusTag(v.url)}
+              ${hasNote(v.url) ? '<span class="tag tag-note">✎ note</span>' : ''}
+            </div>
+          </div>
+          <div class="card-actions">
+            <select class="status-sel" onclick="event.stopPropagation()" onchange="setStatus('${escA(v.url)}', this.value)" title="Статус">
+              ${STATUS_OPTIONS.map(s => `<option value="${s}"${(getStatus(v.url)||'—')===s?' selected':''}>${s}</option>`).join('')}
+            </select>
+            <button class="btn-icon btn-note ${hasNote(v.url)?'has-note':''}" onclick="event.stopPropagation(); startEditNote('${escA(v.url)}')" title="Нотатка">✎</button>
+            <button class="btn-icon btn-fav ${isFav(v.url)?'faved':''}" onclick="event.stopPropagation(); toggleFav('${escA(v.url)}')" title="В обране">${isFav(v.url)?'★':'☆'}</button>
+            <button class="btn-icon btn-del" onclick="event.stopPropagation(); del(this)" title="Видалити">✕</button>
+          </div>
+        </div>
+        <div class="card-panel">
+          <div class="panel-inner">
+            ${v.summary
+              ? `<div class="panel-label">Аналіз</div><div class="panel-text">${esc(v.summary)}</div>`
+              : '<div class="panel-no-analysis">Аналіз ще не проведено</div>'
+            }
+            <div class="note-area">
+              <div class="note-label">Нотатка <button class="note-edit-btn" onclick="event.stopPropagation(); startEditNote('${escA(v.url)}')">${hasNote(v.url) ? 'Редагувати' : 'Додати'}</button></div>
+              ${hasNote(v.url) ? `<div class="note-text">${esc(getNote(v.url))}</div>` : `<div class="note-text empty">Немає нотатки</div>`}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  if (!total) html = '<div class="empty">Нічого не знайдено</div>';
+  app.innerHTML = html;
+  document.getElementById('meta').textContent =
+    `Всього: ${total} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
+}
+
+function toggle(hdr) {
+  const card = hdr.closest('.card');
+  const url = card.dataset.url;
+  card.classList.toggle('open');
+  if (card.classList.contains('open')) {
+    openCards.add(url);
+    if (isNew(url)) {
+      markSeen(url);
+      const newTag = card.querySelector('.tag-new');
+      if (newTag) newTag.remove();
+      renderFilters();
+      updateMarkAllSeenBtn();
+    }
+  } else {
+    openCards.delete(url);
+  }
+}
+
+async function del(btn) {
+  const card = btn.closest('.card');
+  const url = card.dataset.url;
+  if (!confirm('Видалити вакансію?')) return;
+  card.classList.add('deleting');
+  openCards.delete(url);
+  try {
+    const r = await fetch('/api/vacancies', {
+      method:'DELETE', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({url})
+    });
+    if (r.ok) setTimeout(load, 350);
+    else { card.classList.remove('deleting'); alert('Помилка'); }
+  } catch(e) { card.classList.remove('deleting'); alert('Нема зв\'язку'); }
+}
+
+function status(s) {
+  const sb = document.getElementById('statusBar');
+  sb.innerHTML = s === 'ok'
+    ? '<span class="dot dot-ok"></span> Підключено <span class="kb-hint" onclick="showKbHelp()" title="Keyboard shortcuts">⌨ ?</span>'
+    : '<span class="dot dot-err"></span> Немає зв\'язку <span class="kb-hint" onclick="showKbHelp()" title="Keyboard shortcuts">⌨ ?</span>';
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escA(s) { return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function markAllSeen() {
+  const seen = getSeenUrls();
+  let count = 0;
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      if (!seen.has(v.url)) { seen.add(v.url); count++; }
+    }
+  }
+  localStorage.setItem('seenUrls', JSON.stringify([...seen]));
+  renderFilters();
+  render();
+  updateMarkAllSeenBtn();
+}
+
+function updateMarkAllSeenBtn() {
+  const btn = document.getElementById('markAllSeenBtn');
+  let newCount = 0;
+  const seen = getSeenUrls();
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      if (!seen.has(v.url)) newCount++;
+    }
+  }
+  btn.classList.toggle('hidden', newCount === 0);
+}
+
+let allExpanded = false;
+function toggleExpandAll() {
+  allExpanded = !allExpanded;
+  const btn = document.getElementById('expandCollapseBtn');
+  if (allExpanded) {
+    // Expand all visible cards
+    document.querySelectorAll('.card:not(.deleting)').forEach(card => {
+      card.classList.add('open');
+      openCards.add(card.dataset.url);
+    });
+    btn.textContent = '↕ Згорнути всі';
+  } else {
+    document.querySelectorAll('.card').forEach(card => {
+      card.classList.remove('open');
+    });
+    openCards.clear();
+    btn.textContent = '↕ Розгорнути всі';
+  }
+}
+
+let statsVisible = false;
+function toggleStats() {
+  statsVisible = !statsVisible;
+  document.getElementById('statsPanel').style.display = statsVisible ? '' : 'none';
+  document.getElementById('statsToggle').textContent = statsVisible ? 'Статистика ▲' : 'Статистика ▼';
+  if (statsVisible) renderStats();
+}
+
+function renderStats() {
+  let total = 0, scored = 0, sumScore = 0, favCount = 0, noteCount = 0;
+  let high = 0, mid = 0, low = 0, none = 0;
+  const sources = {};
+  const favs = getFavUrls();
+  const statuses = getStatuses();
+  const notesData = getNotes();
+  const pipeline = {Applied:0, Interview:0, Offer:0, Rejected:0};
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      total++;
+      if (favs.has(v.url)) favCount++;
+      if (notesData[v.url]) noteCount++;
+      const st = statuses[v.url];
+      if (st && pipeline.hasOwnProperty(st)) pipeline[st]++;
+      sources[s.name] = (sources[s.name] || 0) + 1;
+      if (v.score === null) { none++; }
+      else { scored++; sumScore += v.score; if (v.score >= 6) high++; else if (v.score >= 4) mid++; else low++; }
+    }
+  }
+  const avg = scored ? (sumScore / scored).toFixed(1) : '—';
+  const pct = (n) => total ? (n / total * 100).toFixed(0) : 0;
+  const pipelineTotal = pipeline.Applied + pipeline.Interview + pipeline.Offer + pipeline.Rejected;
+
+  let sourcesHtml = '';
+  for (const [name, cnt] of Object.entries(sources).sort((a,b) => b[1] - a[1])) {
+    sourcesHtml += `<span class="source-chip">${esc(name)}<b>${cnt}</b></span>`;
+  }
+
+  document.getElementById('statsPanel').innerHTML = `
+    <div class="stats-panel">
+      <div class="stat-card">
+        <div class="stat-label">Всього вакансій</div>
+        <div class="stat-value">${total}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Середній бал</div>
+        <div class="stat-value">${avg} <span class="sub">/ 10</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">В обраному</div>
+        <div class="stat-value" style="color:var(--yellow)">★ ${favCount}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">З нотатками</div>
+        <div class="stat-value" style="color:var(--accent)">✎ ${noteCount}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pipeline</div>
+        <div class="stat-value">${pipelineTotal}</div>
+        <div class="sources-list" style="margin-top:6px">
+          <span class="source-chip" style="color:var(--accent)">Applied<b>${pipeline.Applied}</b></span>
+          <span class="source-chip" style="color:var(--green)">Interview<b>${pipeline.Interview}</b></span>
+          <span class="source-chip" style="color:#2ed573">Offer<b>${pipeline.Offer}</b></span>
+          <span class="source-chip" style="color:var(--muted)">Rejected<b>${pipeline.Rejected}</b></span>
+        </div>
+      </div>
+      <div class="stat-card wide">
+        <div class="stat-label">Розподіл оцінок</div>
+        <div class="score-bar">
+          <div class="score-bar-seg" style="width:${pct(high)}%;background:var(--green)"></div>
+          <div class="score-bar-seg" style="width:${pct(mid)}%;background:var(--yellow)"></div>
+          <div class="score-bar-seg" style="width:${pct(low)}%;background:var(--red)"></div>
+          <div class="score-bar-seg" style="width:${pct(none)}%;background:var(--border)"></div>
+        </div>
+        <div class="score-bar-legend">
+          <span><span class="legend-dot" style="background:var(--green)"></span>Hot ${high}</span>
+          <span><span class="legend-dot" style="background:var(--yellow)"></span>OK ${mid}</span>
+          <span><span class="legend-dot" style="background:var(--red)"></span>Low ${low}</span>
+          <span><span class="legend-dot" style="background:var(--border)"></span>N/A ${none}</span>
+        </div>
+      </div>
+      <div class="stat-card wide">
+        <div class="stat-label">Джерела</div>
+        <div class="sources-list">${sourcesHtml}</div>
+      </div>
+    </div>`;
+}
+
+// Keyboard navigation
+let focusIdx = -1;
+
+function getVisibleCards() {
+  return [...document.querySelectorAll('.card:not(.deleting)')];
+}
+
+function setFocus(idx) {
+  const cards = getVisibleCards();
+  if (!cards.length) return;
+  // Remove old focus
+  cards.forEach(c => c.classList.remove('kb-focus'));
+  // Clamp index
+  focusIdx = Math.max(0, Math.min(idx, cards.length - 1));
+  const card = cards[focusIdx];
+  card.classList.add('kb-focus');
+  card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function showKbHelp() {
+  const existing = document.querySelector('.kb-overlay');
+  if (existing) { existing.remove(); return; }
+  const overlay = document.createElement('div');
+  overlay.className = 'kb-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `<div class="kb-modal">
+    <h3>Клавіатурні скорочення</h3>
+    <div class="kb-row"><span class="kb-key">j</span><span class="kb-desc">Наступна вакансія</span></div>
+    <div class="kb-row"><span class="kb-key">k</span><span class="kb-desc">Попередня вакансія</span></div>
+    <div class="kb-row"><span class="kb-key">Enter</span><span class="kb-desc">Розгорнути / згорнути</span></div>
+    <div class="kb-row"><span class="kb-key">o</span><span class="kb-desc">Відкрити посилання</span></div>
+    <div class="kb-row"><span class="kb-key">f</span><span class="kb-desc">Додати в обране</span></div>
+    <div class="kb-row"><span class="kb-key">s</span><span class="kb-desc">Змінити статус (pipeline)</span></div>
+    <div class="kb-row"><span class="kb-key">n</span><span class="kb-desc">Редагувати нотатку</span></div>
+    <div class="kb-row"><span class="kb-key">x</span><span class="kb-desc">Видалити вакансію</span></div>
+    <div class="kb-row"><span class="kb-key">?</span><span class="kb-desc">Показати цю довідку</span></div>
+    <div class="kb-row"><span class="kb-key">Esc</span><span class="kb-desc">Закрити / зняти фокус</span></div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+document.addEventListener('keydown', (e) => {
+  // Skip if typing in search box
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  // Close help overlay on Esc
+  const overlay = document.querySelector('.kb-overlay');
+  if (overlay) {
+    if (e.key === 'Escape' || e.key === '?') { overlay.remove(); e.preventDefault(); }
+    return;
+  }
+
+  const cards = getVisibleCards();
+  if (!cards.length && e.key !== '?') return;
+
+  switch (e.key) {
+    case 'j':
+    case 'ArrowDown':
+      e.preventDefault();
+      setFocus(focusIdx + 1);
+      break;
+    case 'k':
+    case 'ArrowUp':
+      e.preventDefault();
+      setFocus(focusIdx - 1);
+      break;
+    case 'Enter':
+      if (focusIdx >= 0 && focusIdx < cards.length) {
+        e.preventDefault();
+        const hdr = cards[focusIdx].querySelector('.card-header');
+        if (hdr) toggle(hdr);
+      }
+      break;
+    case 'o':
+      if (focusIdx >= 0 && focusIdx < cards.length) {
+        const url = cards[focusIdx].dataset.url;
+        if (url) window.open(url, '_blank', 'noopener');
+      }
+      break;
+    case 'f':
+      if (focusIdx >= 0 && focusIdx < cards.length) {
+        const url = cards[focusIdx].dataset.url;
+        if (url) toggleFav(url);
+      }
+      break;
+    case 's':
+      if (focusIdx >= 0 && focusIdx < cards.length) {
+        const url = cards[focusIdx].dataset.url;
+        if (url) {
+          const cur = getStatus(url) || '—';
+          const idx = STATUS_OPTIONS.indexOf(cur);
+          const next = STATUS_OPTIONS[(idx + 1) % STATUS_OPTIONS.length];
+          setStatus(url, next);
+        }
+      }
+      break;
+    case 'n':
+      if (focusIdx >= 0 && focusIdx < cards.length) {
+        const url = cards[focusIdx].dataset.url;
+        if (url) startEditNote(url);
+      }
+      break;
+    case 'x':
+      if (focusIdx >= 0 && focusIdx < cards.length) {
+        const btn = cards[focusIdx].querySelector('.btn-del');
+        if (btn) del(btn);
+      }
+      break;
+    case '?':
+      e.preventDefault();
+      showKbHelp();
+      break;
+    case 'Escape':
+      // Clear focus
+      cards.forEach(c => c.classList.remove('kb-focus'));
+      focusIdx = -1;
+      break;
+  }
+});
+
+function exportCSV() {
+  const statuses = getStatuses();
+  const favs = getFavUrls();
+  const notesData = getNotes();
+  const rows = [['Source', 'Title', 'URL', 'Score', 'Type', 'Salary', 'Remote', 'Date', 'Status', 'Pipeline', 'Favorite', 'Note']];
+
+  for (const section of allData) {
+    if (SKIP.includes(section.name)) continue;
+    for (const v of section.items) {
+      const csvEsc = (s) => {
+        s = (s || '').replace(/"/g, '""');
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+      };
+      rows.push([
+        csvEsc(section.name),
+        csvEsc(v.title),
+        csvEsc(v.url),
+        v.score !== null ? v.score : '',
+        csvEsc(v.type),
+        csvEsc(v.salary),
+        csvEsc(v.remote),
+        csvEsc(v.published || v.date || ''),
+        csvEsc(v.status || 'active'),
+        csvEsc(statuses[v.url] || ''),
+        favs.has(v.url) ? 'yes' : '',
+        csvEsc(notesData[v.url] || ''),
+      ].join(','));
+    }
+  }
+
+  const csv = rows.join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `vacancies-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+load();
+setInterval(load, REFRESH);
+</script>
+</body>
+</html>

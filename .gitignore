@@ -1,0 +1,9 @@
+analyses.json
+vacancies.md
+profile.md
+check.log
+app.log
+nightly.log
+__pycache__/
+*.pyc
+.claude/
