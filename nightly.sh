@@ -56,6 +56,11 @@ Append an entry to /home/kvm1/job-searcher/changelog.html in this format:
 
 Be specific and descriptive in the changelog. Write in Ukrainian.
 
+## Step 6: Commit & Push to dev
+After implementing and verifying:
+- `cd /home/kvm1/job-searcher && git add -A && git commit -m "[brief description of what was done]"`
+- `git push origin dev`
+
 IMPORTANT: Do NOT ask the user anything. Make all decisions yourself. You have full autonomy.'
 
 claude --dangerously-skip-permissions -p "$PROMPT" \
