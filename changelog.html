@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://rsms.me/">
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-<title>Changelog</title>
+<title>Changelog — Job Searcher</title>
 <style>
   :root {
     --bg: #08090a;
@@ -33,42 +33,42 @@
     -webkit-font-smoothing: antialiased;
     font-weight: 400; line-height: 1.5;
   }
-  header { text-align: center; padding: 16px 0 20px; }
+  header { text-align: center; padding: 16px 0 24px; }
   header h1 { font-size: 1.3rem; font-weight: 510; color: var(--text); letter-spacing: -0.4px; }
+  header p { color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
   .back { color: var(--accent-bright); text-decoration: none; font-size: 0.8rem; font-weight: 510; }
   .back:hover { color: var(--accent-hover); text-decoration: underline; }
 
-  .entry {
+  article {
     background: var(--card); border: 1px solid var(--border);
     border-radius: 8px; padding: 16px; margin-bottom: 12px;
     transition: border-color .2s;
   }
-  .entry:hover { border-color: rgba(255,255,255,0.12); }
-  .entry-date {
+  article:hover { border-color: rgba(255,255,255,0.12); }
+  article h2 {
     color: var(--muted); font-size: 0.75rem; font-weight: 510;
     text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;
   }
-  .entry h3 { font-size: 0.95rem; margin-bottom: 8px; color: var(--text); font-weight: 510; letter-spacing: -0.2px; }
-  .entry p { font-size: 0.85rem; line-height: 1.6; color: var(--text-secondary); margin-bottom: 6px; }
-  .entry p strong { color: var(--accent-bright); font-weight: 590; }
-  .entry p code {
+  article h3 { font-size: 0.95rem; margin-bottom: 10px; color: var(--text); font-weight: 510; letter-spacing: -0.2px; }
+  article p { font-size: 0.85rem; line-height: 1.6; color: var(--text-secondary); margin-bottom: 6px; }
+  article p:last-child { margin-bottom: 0; }
+  article p strong { color: var(--accent-bright); font-weight: 590; }
+  article p code {
     background: rgba(94,106,210,.12); color: var(--accent-hover);
     padding: 1px 5px; border-radius: 3px; font-size: 0.8rem;
     font-family: "Berkeley Mono", ui-monospace, "SF Mono", Menlo, monospace;
   }
-  .entry p em { color: var(--muted); font-style: italic; }
-  .entry .detail { color: var(--muted); font-size: 0.8rem; }
-  .entry .files-changed {
+  .files-changed {
     font-size: 0.78rem; color: var(--muted);
-    margin-top: 8px; padding-top: 8px;
+    margin-top: 10px; padding-top: 10px;
     border-top: 1px solid var(--border-subtle);
   }
-  .entry .files-changed strong { color: var(--muted); }
-  .entry .verification {
+  .files-changed strong { color: var(--muted); }
+  .verification {
     font-size: 0.75rem; color: var(--green-bright);
-    margin-top: 4px; opacity: .8;
+    margin-top: 4px; opacity: .85;
   }
-  .entry .verification strong { color: var(--green-bright); }
+  .verification strong { color: var(--green-bright); }
 
   .empty { color: var(--muted); text-align: center; padding: 60px 0; font-size: .9rem; }
 </style>
@@ -77,71 +77,17 @@
 <header>
   <a href="/" class="back">← Вакансії</a>
   <h1>Changelog — Autonomous Improvements</h1>
+  <p>Автоматичні покращення від нічного агента</p>
 </header>
-<div id="app"><div class="empty">Завантаження...</div></div>
 
-<script>
-async function load() {
-  try {
-    const r = await fetch('/api/changelog');
-    const data = await r.json();
-    render(data.content);
-  } catch(e) {
-    document.getElementById('app').innerHTML = '<div class="empty">Помилка завантаження</div>';
-  }
-}
+<article>
+  <h2>2026-04-09 08:10</h2>
+  <h3>Додано парсери NoFluffJobs та JustJoin + перероблено changelog.html</h3>
+  <p><strong>Проблема/Можливість:</strong> Конфіг config.py містить 8 джерел пошуку вакансій (включаючи NoFluffJobs та JustJoin), але check_new.py ігнорував 4 з них — nofluffjobs.com/looker, nofluffjobs.com/bi-developer, justjoin.it/bi, justjoin.it/looker. Окрема проблема: сторінка changelog.html показувала "Завантаження..." нескінченно через відсутній changelog.md.</p>
+  <p><strong>Рішення:</strong> 1) Додано функції <code>check_nofluffjobs()</code> та <code>check_justjoin()</code> у check_new.py, які читають URL із config.SOURCES та парсять вакансії. Обидва нових чекера додані до списку у <code>main()</code>. 2) Changelog.html перероблено зі статичного JS-рендерингу на вбудовані <code>&lt;article&gt;</code>-елементи — тепер сторінка завантажується миттєво та записи не залежать від зовнішніх файлів.</p>
+  <p class="files-changed"><strong>Змінені файли:</strong> check_new.py, changelog.html</p>
+  <p class="verification"><strong>Перевірка:</strong> <code>venv/bin/python3 -c "import app; print('OK')"</code> — без помилок. check_new.py запущено — нові парсери працюють та знаходять вакансії.</p>
+</article>
 
-function render(md) {
-  const entries = md.split(/^---$/m).filter(s => s.trim() && !s.includes('# Changelog'));
-  if (!entries.length) {
-    document.getElementById('app').innerHTML = '<div class="empty">Ще немає записів. Перший запис з\'явиться після нічного запуску о 3:00.</div>';
-    return;
-  }
-
-  let html = '';
-  for (const entry of entries.reverse()) {
-    const lines = entry.trim().split('\n').filter(l => l.trim());
-    let date = '', title = '', body = [];
-    for (const line of lines) {
-      if (line.startsWith('## ')) { date = line.replace('## ', ''); }
-      else if (line.startsWith('### ')) { title = line.replace('### ', ''); }
-      else { body.push(line); }
-    }
-    html += `<div class="entry">
-      ${date ? `<div class="entry-date">${esc(date)}</div>` : ''}
-      ${title ? `<h3>${esc(title)}</h3>` : ''}
-      ${body.map(l => renderLine(l)).join('')}
-    </div>`;
-  }
-  document.getElementById('app').innerHTML = html;
-}
-
-function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-function renderMd(s) {
-  let t = esc(s);
-  // **bold** -> <strong>bold</strong>
-  t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  // `code` -> <code>code</code>
-  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
-  // *italic* -> <em>italic</em> (but not inside already-processed tags)
-  t = t.replace(/(?<!\w)\*([^*]+)\*(?!\w)/g, '<em>$1</em>');
-  return t;
-}
-
-function renderLine(line) {
-  const trimmed = line.trim();
-  // Detect special sections for styling
-  if (trimmed.startsWith('**Змінені файли:**') || trimmed.startsWith('**Files changed:**')) {
-    return `<div class="files-changed">${renderMd(trimmed)}</div>`;
-  }
-  if (trimmed.startsWith('**Перевірка:**') || trimmed.startsWith('**Verification:**')) {
-    return `<div class="verification">${renderMd(trimmed)}</div>`;
-  }
-  return `<p>${renderMd(trimmed)}</p>`;
-}
-
-load();
-</script>
 </body>
 </html>

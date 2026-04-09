@@ -352,6 +352,89 @@ def check_glassdoor():
     return results
 
 
+def check_nofluffjobs(source_key):
+    """NoFluffJobs — European/Polish tech job board."""
+    source = SOURCES.get(source_key, {})
+    if not source.get("enabled", True):
+        return []
+    source_url = source.get("url", "")
+    if not source_url:
+        return []
+
+    log(f"Checking NoFluffJobs ({source_key})...")
+    html = fetch_html(source_url)
+    if not html:
+        return []
+
+    existing = get_existing_urls()
+    results = []
+
+    link_pattern = source.get("link_pattern", r'/pl/job/[a-z0-9-]+')
+    for m in re.finditer(link_pattern, html):
+        path = m.group(0)
+        url = f"https://nofluffjobs.com{path}"
+        if url in existing or any(r["url"] == url for r in results):
+            continue
+
+        # Derive title from URL slug: "/pl/job/bi-developer-company-city-abc123"
+        slug = path.split("/")[-1]
+        # Remove trailing hash-id (last segment after last hyphen if short/alphanumeric)
+        slug_parts = slug.rsplit("-", 1)
+        if len(slug_parts) == 2 and len(slug_parts[1]) <= 7 and slug_parts[1].isalnum():
+            slug = slug_parts[0]
+        title = slug.replace("-", " ").title()
+
+        if is_relevant(title):
+            results.append({"title": title, "url": url, "section": source_key})
+
+    results = results[:15]
+    log(f"  Found {len(results)} new on NoFluffJobs ({source_key})")
+    return results
+
+
+def check_justjoin(source_key):
+    """JustJoin.it — Polish/European tech job board."""
+    source = SOURCES.get(source_key, {})
+    if not source.get("enabled", True):
+        return []
+    source_url = source.get("url", "")
+    if not source_url:
+        return []
+
+    log(f"Checking JustJoin ({source_key})...")
+    html = fetch_html(source_url)
+    if not html:
+        return []
+
+    existing = get_existing_urls()
+    results = []
+
+    link_pattern = source.get("link_pattern", r'/offers/[a-z0-9-]+')
+    for m in re.finditer(link_pattern, html):
+        path = m.group(0)
+        url = f"https://justjoin.it{path}"
+        if url in existing:
+            continue
+
+        # Grab title from nearby HTML
+        start = m.end()
+        chunk = html[start:start + 400]
+        title_m = re.search(r'>([^<]{8,80})<', chunk)
+        if title_m:
+            title = title_m.group(1).strip()
+            # Clean up HTML entities
+            title = re.sub(r'&amp;', '&', title)
+            title = re.sub(r'&lt;', '<', title)
+            title = re.sub(r'&gt;', '>', title)
+            if is_relevant(title):
+                if not any(r["url"] == url for r in results):
+                    results.append({"title": title, "url": url, "section": source_key})
+
+    results = results[:15]
+    log(f"  Found {len(results)} new on JustJoin ({source_key})")
+    return results
+
+
 # ============================================================
 # ANALYSIS & MD FILE MANAGEMENT
 # ============================================================
@@ -442,19 +525,42 @@ def main():
 
     # Run all checkers
     all_new = []
-    checkers = [
+
+    # Simple checkers (no args)
+    simple_checkers = [
         check_djinni,
         check_dou,
         check_workua,
     ]
-
-    for checker in checkers:
+    for checker in simple_checkers:
         try:
             results = checker()
             all_new.extend(results)
             time.sleep(2)  # Be polite between requests
         except Exception as e:
             log(f"  ERROR in {checker.__name__}: {e}")
+
+    # NoFluffJobs sources from config
+    for source_key in SOURCES:
+        if "nofluffjobs" in SOURCES[source_key].get("url", "").lower() or \
+                source_key.lower().startswith("nofluffjobs"):
+            try:
+                results = check_nofluffjobs(source_key)
+                all_new.extend(results)
+                time.sleep(2)
+            except Exception as e:
+                log(f"  ERROR in check_nofluffjobs({source_key}): {e}")
+
+    # JustJoin sources from config
+    for source_key in SOURCES:
+        if "justjoin" in SOURCES[source_key].get("url", "").lower() or \
+                source_key.lower().startswith("justjoin"):
+            try:
+                results = check_justjoin(source_key)
+                all_new.extend(results)
+                time.sleep(2)
+            except Exception as e:
+                log(f"  ERROR in check_justjoin({source_key}): {e}")
 
     # Deduplicate by URL
     seen = set()

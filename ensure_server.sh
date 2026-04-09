@@ -8,7 +8,7 @@ cd "$SCRIPT_DIR"
 LOG="$SCRIPT_DIR/app.log"
 
 # Read port from config.py, default 8080
-PORT=$(python3 -c "
+PORT=$(venv/bin/python3 -c "
 try:
     from config import WEB_PORT; print(WEB_PORT)
 except:
@@ -25,7 +25,7 @@ else
     # Kill any zombie processes holding the port
     lsof -ti:$PORT | xargs kill -9 2>/dev/null
     sleep 1
-    nohup python3 app.py >> "$LOG" 2>&1 &
+    nohup venv/bin/python3 app.py >> "$LOG" 2>&1 &
     sleep 2
     # Verify restart
     HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:$PORT/ 2>/dev/null)

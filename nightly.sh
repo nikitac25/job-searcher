@@ -2,21 +2,21 @@
 # Nightly autonomous improvement cycle — runs via cron at 3:03 AM
 # Claude Code analyzes the project, picks one improvement, implements it, and logs to changelog.
 
-export HOME=/home/den
-export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+export HOME=/home/kvm1
+export PATH="/home/kvm1/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 # Load secrets from .env (not tracked by git)
-[ -f /home/den/job-search/.env ] && export $(grep -v '^#' /home/den/job-search/.env | xargs)
+[ -f /home/kvm1/job-searcher/.env ] && export $(grep -v '^#' /home/kvm1/job-searcher/.env | xargs)
 
-cd /home/den/job-search || exit 1
+cd /home/kvm1/job-searcher || exit 1
 
-PROMPT='You are running an autonomous nightly maintenance and improvement cycle for the job-search project at /home/den/job-search/. The user has given you FULL autonomy to make decisions and implement changes without asking.
+PROMPT='You are running an autonomous nightly maintenance and improvement cycle for the job-searcher project at /home/kvm1/job-searcher/. The user has given you FULL autonomy to make decisions and implement changes without asking.
 
 Follow these steps IN ORDER:
 
 ## Step 1: Health Check
-- Read the current state of all project files (app.py, check_new.py, analyze_new.py, index.html, changelog.html, vacancies.md, analyses.json, changelog.md)
-- Try running the Flask app briefly to check for import/syntax errors: `cd /home/den/job-search && python3 -c "import app; print('\''OK'\'')"`
-- Run check_new.py to verify it works: `cd /home/den/job-search && timeout 120 python3 check_new.py 2>&1 | tail -30`
+- Read the current state of all project files (app.py, check_new.py, analyze_new.py, index.html, changelog.html, vacancies.md, analyses.json)
+- Try running the Flask app briefly to check for import/syntax errors: `cd /home/kvm1/job-searcher && venv/bin/python3 -c "import app; print('\''OK'\'')"`
+- Run check_new.py to verify it works: `cd /home/kvm1/job-searcher && timeout 120 venv/bin/python3 check_new.py 2>&1 | tail -30`
 - If there are errors, fix them. After fixing, verify the fix works.
 
 ## Step 2: Analyze & Pick One Improvement
@@ -32,34 +32,27 @@ Think about what would make this project better. Consider areas like:
 - Remove duplicate vacancies from vacancies.md
 - Improve the changelog page design
 
-Pick ONE concrete improvement that adds the most value. Prefer user-facing improvements. Do NOT repeat improvements that are already logged in changelog.md.
+Pick ONE concrete improvement that adds the most value. Prefer user-facing improvements. Do NOT repeat improvements that are already logged in changelog.html.
 
 ## Step 3: Implement the Improvement
 Make the code changes needed. Keep changes focused and clean.
 
 ## Step 4: Verify
-- Run `cd /home/den/job-search && python3 -c "import app; print('\''OK'\'')"` to verify no import errors
+- Run `cd /home/kvm1/job-searcher && venv/bin/python3 -c "import app; print('\''OK'\'')"` to verify no import errors
 - Check that all modified files have valid syntax
 - If you changed HTML/JS, verify the structure is valid
 
 ## Step 5: Log to Changelog
-Append an entry to /home/den/job-search/changelog.md in this format:
+Append an entry to /home/kvm1/job-searcher/changelog.html in this format:
 
----
-
-## YYYY-MM-DD HH:MM
-
-### [Short title of what was done]
-
-**Problem/Opportunity:** [What you identified]
-
-**Solution:** [What you implemented]
-
-**Files changed:** [List of files]
-
-**Verification:** [How you verified it works]
-
----
+<article>
+  <h2>YYYY-MM-DD HH:MM</h2>
+  <h3>[Short title of what was done]</h3>
+  <p><strong>Problem/Opportunity:</strong> [What you identified]</p>
+  <p><strong>Solution:</strong> [What you implemented]</p>
+  <p><strong>Files changed:</strong> [List of files]</p>
+  <p><strong>Verification:</strong> [How you verified it works]</p>
+</article>
 
 Be specific and descriptive in the changelog. Write in Ukrainian.
 
@@ -67,4 +60,4 @@ IMPORTANT: Do NOT ask the user anything. Make all decisions yourself. You have f
 
 claude --dangerously-skip-permissions -p "$PROMPT" \
   --output-format text \
-  >> /home/den/job-search/nightly.log 2>&1
+  >> /home/kvm1/job-searcher/nightly.log 2>&1
