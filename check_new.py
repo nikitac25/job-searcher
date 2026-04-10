@@ -562,17 +562,20 @@ def main():
             except Exception as e:
                 log(f"  ERROR in check_justjoin({source_key}): {e}")
 
-    # Deduplicate by URL
-    seen = set()
+    # Deduplicate by URL and normalized title
+    seen_urls = set()
+    seen_titles = set()
     unique = []
     for v in all_new:
-        if v["url"] not in seen:
-            seen.add(v["url"])
+        title_key = v["title"].lower()
+        if v["url"] not in seen_urls and title_key not in seen_titles:
+            seen_urls.add(v["url"])
+            seen_titles.add(title_key)
             unique.append(v)
     all_new = unique
 
     if not all_new:
-        log(f"No new vacancies found across {len(checkers)} sources.")
+        log(f"No new vacancies found.")
         return
 
     # Limit per run to avoid rate limits (Groq free: ~30 RPM)

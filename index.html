@@ -426,6 +426,43 @@
   .toast-dismiss:hover { color: #fff; }
   .toast-dismiss svg { width: 14px; height: 14px; }
 
+  /* Undo delete snackbar */
+  .undo-snack {
+    position: fixed; bottom: 44px; left: 16px;
+    background: var(--surface); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px; padding: 0 4px 0 16px;
+    font-size: 13px; color: var(--text-secondary);
+    display: flex; align-items: center; gap: 4px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04);
+    z-index: 50; height: 40px;
+    transform: translateY(70px); opacity: 0;
+    transition: transform .3s cubic-bezier(.4,0,.2,1), opacity .3s;
+    pointer-events: none; white-space: nowrap;
+  }
+  .undo-snack.visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
+  .undo-snack-timer {
+    width: 3px; height: 28px; border-radius: 2px;
+    background: rgba(255,255,255,0.06);
+    margin-right: 4px; overflow: hidden;
+  }
+  .undo-snack-timer-fill {
+    width: 100%; height: 100%; background: var(--accent-bright);
+    transform-origin: bottom; transform: scaleY(1);
+    transition: transform 5s linear;
+  }
+  .undo-snack-timer-fill.draining { transform: scaleY(0); }
+  .undo-btn {
+    background: none; border: none; color: var(--accent-bright);
+    font-size: 13px; font-weight: 590; cursor: pointer;
+    padding: 0 12px; height: 32px; border-radius: 6px;
+    transition: background .15s; font-family: inherit;
+  }
+  .undo-btn:hover { background: rgba(113,112,255,.15); }
+  .card.pending-delete {
+    opacity: .25; pointer-events: none;
+    transition: opacity .25s;
+  }
+
   /* Stats panel */
   .stats-panel {
     display: grid;
@@ -676,6 +713,12 @@
   <button class="action-btn" id="hideStaleBtn" onclick="toggleHideStale()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> Сховати застарілі</button>
 </div>
 <div id="app"></div>
+
+<div class="undo-snack" id="undoSnack">
+  <div class="undo-snack-timer"><div class="undo-snack-timer-fill" id="undoTimerFill"></div></div>
+  <span>Вакансію видалено</span>
+  <button class="undo-btn" onclick="undoDelete()">Скасувати</button>
+</div>
 
 <div class="toast" id="toast" onclick="applyPendingData()">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
@@ -1206,20 +1249,73 @@ function toggle(hdr) {
   }
 }
 
-async function del(btn) {
+let _pendingDelUrl = null;
+let _pendingDelTimer = null;
+let _undoSnackTimer = null;
+
+function del(btn) {
   const card = btn.closest('.card');
   const url = card.dataset.url;
-  if (!confirm('Видалити вакансію?')) return;
-  card.classList.add('deleting');
+
+  // Commit any already-pending delete before starting a new one
+  if (_pendingDelUrl && _pendingDelTimer) {
+    clearTimeout(_pendingDelTimer);
+    _pendingDelTimer = null;
+    _commitDel(_pendingDelUrl);
+  }
+
+  card.classList.add('pending-delete');
   openCards.delete(url);
+  _pendingDelUrl = url;
+
+  _showUndoSnack();
+  _pendingDelTimer = setTimeout(() => _commitDel(url), 5000);
+}
+
+async function _commitDel(url) {
+  if (_pendingDelUrl === url) { _pendingDelUrl = null; _pendingDelTimer = null; }
+  _hideUndoSnack();
   try {
     const r = await fetch('/api/vacancies', {
-      method:'DELETE', headers:{'Content-Type':'application/json'},
+      method: 'DELETE', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({url})
     });
     if (r.ok) setTimeout(load, 350);
-    else { card.classList.remove('deleting'); alert('Помилка'); }
-  } catch(e) { card.classList.remove('deleting'); alert('Нема зв\'язку'); }
+    else {
+      const c = document.querySelector(`.card[data-url="${CSS.escape(url)}"]`);
+      if (c) c.classList.remove('pending-delete', 'deleting');
+    }
+  } catch(e) {
+    const c = document.querySelector(`.card[data-url="${CSS.escape(url)}"]`);
+    if (c) c.classList.remove('pending-delete', 'deleting');
+  }
+}
+
+function undoDelete() {
+  if (_pendingDelTimer) { clearTimeout(_pendingDelTimer); _pendingDelTimer = null; }
+  if (_pendingDelUrl) {
+    const c = document.querySelector(`.card[data-url="${CSS.escape(_pendingDelUrl)}"]`);
+    if (c) c.classList.remove('pending-delete', 'deleting');
+    _pendingDelUrl = null;
+  }
+  _hideUndoSnack();
+}
+
+function _showUndoSnack() {
+  const snack = document.getElementById('undoSnack');
+  const fill = document.getElementById('undoTimerFill');
+  snack.classList.add('visible');
+  // Reset and animate the timer bar
+  fill.classList.remove('draining');
+  void fill.offsetWidth; // force reflow to restart transition
+  requestAnimationFrame(() => fill.classList.add('draining'));
+  clearTimeout(_undoSnackTimer);
+  _undoSnackTimer = setTimeout(_hideUndoSnack, 5500);
+}
+
+function _hideUndoSnack() {
+  document.getElementById('undoSnack').classList.remove('visible');
+  clearTimeout(_undoSnackTimer);
 }
 
 function status(s) {
