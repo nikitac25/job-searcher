@@ -91,6 +91,15 @@
 
 
 <article>
+  <h2>2026-04-11 04:00</h2>
+  <h3>Виправлено диспетчер джерел: тепер check_new.py перевіряє всі джерела з config.py</h3>
+  <p><strong>Проблема/Можливість:</strong> Функція <code>main()</code> у check_new.py використовувала жорстко закодований список <code>simple_checkers = [check_djinni, check_dou, check_workua]</code>, де кожен чекер звертався до фіксованого ключа SOURCES — <code>SOURCES.get("Djinni", ...)</code>, <code>SOURCES.get("DOU", ...)</code>, <code>SOURCES.get("Work.ua", ...)</code>. Але config.py містить окремі джерела <code>Djinni_looker</code> та <code>Djinni_bi</code> (що підтверджується розділами у vacancies.md), які ніколи не перевірялись під час нічного запуску — вакансії з цих пошуків повністю ігнорувались.</p>
+  <p><strong>Рішення:</strong> 1) Рефакторинг <code>check_djinni()</code>, <code>check_dou()</code>, <code>check_workua()</code> — тепер кожна функція приймає <code>source_key</code> як параметр і читає URL та налаштування з <code>SOURCES[source_key]</code>, а назву секції в vacancies.md встановлює рівною <code>source_key</code> (замість хардкоду). 2) Перероблено <code>main()</code>: замість статичного списку — єдиний цикл по всіх ключах <code>SOURCES</code>, який диспетчеризує виклик відповідного чекера за доменом URL (djinni → <code>check_djinni</code>, jobs.dou.ua → <code>check_dou</code>, work.ua → <code>check_workua</code>, nofluffjobs → <code>check_nofluffjobs</code>, justjoin → <code>check_justjoin</code>). Тепер усі джерела з config.py автоматично враховуються без зміни коду.</p>
+  <p class="files-changed"><strong>Змінені файли:</strong> check_new.py</p>
+  <p class="verification"><strong>Перевірка:</strong> <code>venv/bin/python3 -c "import check_new; print('OK')"</code> та <code>import app</code> — без помилок. Логіка диспетчера перевірена вручну: кожен ключ SOURCES тепер отримує правильний чекер і додає вакансії до відповідної секції.</p>
+</article>
+
+<article>
   <h2>2026-04-10 04:00</h2>
   <h3>Undo-скасування видалення + виправлення NameError у check_new.py</h3>
   <p><strong>Проблема/Можливість:</strong> 1) У check_new.py на рядку 578 використовувалась змінна <code>checkers</code>, яка не була визначена у цьому scope — при відсутності нових вакансій це призводило б до <code>NameError</code> під час нічного запуску. 2) Кнопка видалення вакансії викликала нативний браузерний <code>confirm()</code> — незручний модальний діалог без можливості скасування після підтвердження. Один невірний клік — і вакансія безповоротно зникала.</p>
