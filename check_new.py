@@ -70,11 +70,15 @@ def is_relevant(title):
 # PARSERS FOR EACH JOB BOARD
 # ============================================================
 
-def check_djinni():
+def check_djinni(source_key="Djinni"):
     """Djinni.co — Ukrainian tech job board."""
-    log("Checking Djinni...")
-    url = SOURCES.get("Djinni", {}).get("url", "https://djinni.co/jobs/keyword-ui_ux/")
-    html = fetch_html(url)
+    source = SOURCES.get(source_key, {})
+    if not source.get("enabled", True):
+        return []
+    source_url = source.get("url", "https://djinni.co/jobs/keyword-ui_ux/")
+
+    log(f"Checking Djinni ({source_key})...")
+    html = fetch_html(source_url)
     if not html:
         return []
 
@@ -83,8 +87,8 @@ def check_djinni():
 
     for m in re.finditer(r'<a[^>]*href="(/jobs/(\d+)-[^"]*?)"[^>]*>', html):
         path = m.group(1)
-        url = f"https://djinni.co{path}"
-        if url in existing:
+        job_url = f"https://djinni.co{path}"
+        if job_url in existing:
             continue
 
         start = m.end()
@@ -93,17 +97,21 @@ def check_djinni():
         if title_m:
             title = title_m.group(1).strip()
             if is_relevant(title):
-                results.append({"title": title, "url": url, "section": "Djinni.co"})
+                results.append({"title": title, "url": job_url, "section": source_key})
 
-    log(f"  Found {len(results)} new on Djinni")
+    log(f"  Found {len(results)} new on Djinni ({source_key})")
     return results
 
 
-def check_dou():
+def check_dou(source_key="DOU"):
     """DOU.ua — Ukrainian developer community job board."""
-    log("Checking DOU...")
-    url = SOURCES.get("DOU", {}).get("url", "https://jobs.dou.ua/vacancies/?search=UI/UX+Designer")
-    html = fetch_html(url)
+    source = SOURCES.get(source_key, {})
+    if not source.get("enabled", True):
+        return []
+    source_url = source.get("url", "https://jobs.dou.ua/vacancies/?search=UI/UX+Designer")
+
+    log(f"Checking DOU ({source_key})...")
+    html = fetch_html(source_url)
     if not html:
         return []
 
@@ -119,7 +127,7 @@ def check_dou():
         title = m.group(2).strip()
         if url in existing or not is_relevant(title):
             continue
-        results.append({"title": title, "url": url, "section": "DOU.ua"})
+        results.append({"title": title, "url": url, "section": source_key})
 
     # Also try relative URLs
     for m in re.finditer(
@@ -131,17 +139,21 @@ def check_dou():
         if url in existing or not is_relevant(title):
             continue
         if not any(r["url"] == url for r in results):
-            results.append({"title": title, "url": url, "section": "DOU.ua"})
+            results.append({"title": title, "url": url, "section": source_key})
 
-    log(f"  Found {len(results)} new on DOU")
+    log(f"  Found {len(results)} new on DOU ({source_key})")
     return results
 
 
-def check_workua():
+def check_workua(source_key="Work.ua"):
     """Work.ua — Ukrainian job board."""
-    log("Checking Work.ua...")
-    url = SOURCES.get("Work.ua", {}).get("url", "https://www.work.ua/en/jobs-ui+ux+designer/")
-    html = fetch_html(url)
+    source = SOURCES.get(source_key, {})
+    if not source.get("enabled", True):
+        return []
+    source_url = source.get("url", "https://www.work.ua/en/jobs-ui+ux+designer/")
+
+    log(f"Checking Work.ua ({source_key})...")
+    html = fetch_html(source_url)
     if not html:
         return []
 
@@ -151,13 +163,13 @@ def check_workua():
     # Pattern: <a href="/en/jobs/ID/" ...>TITLE</a>
     for m in re.finditer(r'<a[^>]*href="(/en/jobs/(\d+)/)"[^>]*>\s*([^<]{10,})', html):
         path = m.group(1)
-        url = f"https://www.work.ua{path}"
+        job_url = f"https://www.work.ua{path}"
         title = m.group(3).strip()
-        if url in existing or not is_relevant(title):
+        if job_url in existing or not is_relevant(title):
             continue
-        results.append({"title": title, "url": url, "section": "Work.ua"})
+        results.append({"title": title, "url": job_url, "section": source_key})
 
-    log(f"  Found {len(results)} new on Work.ua")
+    log(f"  Found {len(results)} new on Work.ua ({source_key})")
     return results
 
 
@@ -523,44 +535,42 @@ def main():
     log("Starting vacancy check across all sources")
     log("=" * 50)
 
-    # Run all checkers
+    # Run all checkers — dispatch every SOURCES entry by URL domain
     all_new = []
+    dispatched = set()
 
-    # Simple checkers (no args)
-    simple_checkers = [
-        check_djinni,
-        check_dou,
-        check_workua,
-    ]
-    for checker in simple_checkers:
-        try:
-            results = checker()
-            all_new.extend(results)
-            time.sleep(2)  # Be polite between requests
-        except Exception as e:
-            log(f"  ERROR in {checker.__name__}: {e}")
-
-    # NoFluffJobs sources from config
     for source_key in SOURCES:
-        if "nofluffjobs" in SOURCES[source_key].get("url", "").lower() or \
-                source_key.lower().startswith("nofluffjobs"):
-            try:
+        if source_key in dispatched:
+            continue
+        src_url = SOURCES[source_key].get("url", "").lower()
+        try:
+            if "djinni" in src_url:
+                results = check_djinni(source_key)
+                all_new.extend(results)
+                dispatched.add(source_key)
+                time.sleep(2)
+            elif "jobs.dou.ua" in src_url:
+                results = check_dou(source_key)
+                all_new.extend(results)
+                dispatched.add(source_key)
+                time.sleep(2)
+            elif "work.ua" in src_url:
+                results = check_workua(source_key)
+                all_new.extend(results)
+                dispatched.add(source_key)
+                time.sleep(2)
+            elif "nofluffjobs" in src_url or source_key.lower().startswith("nofluffjobs"):
                 results = check_nofluffjobs(source_key)
                 all_new.extend(results)
+                dispatched.add(source_key)
                 time.sleep(2)
-            except Exception as e:
-                log(f"  ERROR in check_nofluffjobs({source_key}): {e}")
-
-    # JustJoin sources from config
-    for source_key in SOURCES:
-        if "justjoin" in SOURCES[source_key].get("url", "").lower() or \
-                source_key.lower().startswith("justjoin"):
-            try:
+            elif "justjoin" in src_url or source_key.lower().startswith("justjoin"):
                 results = check_justjoin(source_key)
                 all_new.extend(results)
+                dispatched.add(source_key)
                 time.sleep(2)
-            except Exception as e:
-                log(f"  ERROR in check_justjoin({source_key}): {e}")
+        except Exception as e:
+            log(f"  ERROR in checker for {source_key}: {e}")
 
     # Deduplicate by URL and normalized title
     seen_urls = set()
