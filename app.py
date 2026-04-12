@@ -33,6 +33,12 @@ def save_analyses(data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+# Section names to exclude entirely from the UI
+_SKIP_SECTIONS = {"Search URLs", "Пошукові запити для самостійного моніторингу"}
+# Item titles that are search-page placeholders, not real vacancies
+_SKIP_TITLES = {"All vacancies"}
+
+
 def parse_vacancies():
     if not os.path.exists(MD_FILE):
         return []
@@ -47,7 +53,11 @@ def parse_vacancies():
     for line in lines:
         h2 = re.match(r"^## (.+)", line)
         if h2:
-            current_section = {"name": h2.group(1).strip(), "items": []}
+            section_name = h2.group(1).strip()
+            if section_name in _SKIP_SECTIONS:
+                current_section = None
+                continue
+            current_section = {"name": section_name, "items": []}
             sections.append(current_section)
             continue
 
@@ -56,10 +66,13 @@ def parse_vacancies():
 
         m = re.match(r"^- \[(.+?)\]\((.+?)\)\s*(\*\((.+?)\)\*)?", line)
         if m:
+            title = m.group(1).strip()
+            if title in _SKIP_TITLES:
+                continue
             url = m.group(2)
             analysis = analyses.get(url, {})
             current_section["items"].append({
-                "title": m.group(1),
+                "title": title,
                 "url": url,
                 "date": m.group(4) or "",
                 "score": analysis.get("score", None),
@@ -71,6 +84,8 @@ def parse_vacancies():
                 "status": analysis.get("status", ""),
             })
 
+    # Remove empty sections
+    sections = [s for s in sections if s["items"]]
     return sections
 
 
@@ -122,6 +137,36 @@ def api_changelog():
 @app.route("/api/vacancies")
 def api_vacancies():
     return jsonify(parse_vacancies())
+
+
+@app.route("/api/status")
+def api_status():
+    """Return info about the last vacancy check run (from check.log)."""
+    log_file = os.path.join(BASE_DIR, "check.log")
+    if not os.path.exists(log_file):
+        return jsonify({"last_check": None, "added": None})
+
+    with open(log_file, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    last_check = None
+    added = None
+
+    # Scan backwards to find the most recent run info
+    for line in reversed(lines):
+        line = line.strip()
+        if not line:
+            continue
+        ts = re.match(r'^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]', line)
+        if ts and last_check is None:
+            last_check = ts.group(1)
+        done = re.search(r'Done\. Added (\d+) vacanc', line)
+        if done and added is None:
+            added = int(done.group(1))
+        if 'Starting vacancy check' in line and last_check is not None:
+            break
+
+    return jsonify({"last_check": last_check, "added": added})
 
 
 @app.route("/api/vacancies", methods=["DELETE"])

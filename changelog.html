@@ -81,6 +81,15 @@
 </header>
 
 <article>
+  <h2>2026-04-12 04:00</h2>
+  <h3>Фільтрація заглушок + статус останньої перевірки у нижній панелі</h3>
+  <p><strong>Проблема/Можливість:</strong> У кожній секції <code>vacancies.md</code> перший рядок — <code>- [All vacancies](https://...)</code> — це посилання на сторінку пошуку, а не реальна вакансія. Ці записи потрапляли до UI як картки без оцінки й аналізу, забруднюючи список. Також секція <code>Search URLs</code> парсилась як ще одна секція вакансій. Крім того, нижня панель показувала лише «Підключено» — без жодної інформації про те, коли востаннє запускалась перевірка нових вакансій.</p>
+  <p><strong>Рішення:</strong> 1) У <code>parse_vacancies()</code> (app.py) додано фільтрацію: елементи з назвою <code>All vacancies</code> пропускаються; секції <code>Search URLs</code> та <code>Пошукові запити для самостійного моніторингу</code> ігноруються повністю; порожні секції видаляються з результату. 2) Додано новий ендпоінт <code>GET /api/status</code>, який читає <code>check.log</code> і повертає <code>last_check</code> (ISO timestamp останнього запуску) та <code>added</code> (кількість доданих вакансій із рядка «Done. Added N»). 3) У <code>index.html</code> додано функцію <code>loadStatus()</code>, яка викликається при завантаженні сторінки і вставляє у нижню панель рядок виду «· перевірено 2г тому · +3 нових» або «· нових немає».</p>
+  <p class="files-changed"><strong>Змінені файли:</strong> app.py, index.html</p>
+  <p class="verification"><strong>Перевірка:</strong> <code>venv/bin/python3 -c "import app; print('OK')"</code> — без помилок. <code>parse_vacancies()</code> повертає 4 секції (DOU.ua, Work.ua, NoFluffJobs_looker, NoFluffJobs_bi) без жодних заглушок «All vacancies» та без секції Search URLs. <code>/api/status</code> повертає <code>{"added": null, "last_check": "2026-04-12 03:04:24"}</code>. HTML-валідатор: помилок немає.</p>
+</article>
+
+<article>
   <h2>2026-04-09 08:10</h2>
   <h3>Додано парсери NoFluffJobs та JustJoin + перероблено changelog.html</h3>
   <p><strong>Проблема/Можливість:</strong> Конфіг config.py містить 8 джерел пошуку вакансій (включаючи NoFluffJobs та JustJoin), але check_new.py ігнорував 4 з них — nofluffjobs.com/looker, nofluffjobs.com/bi-developer, justjoin.it/bi, justjoin.it/looker. Окрема проблема: сторінка changelog.html показувала "Завантаження..." нескінченно через відсутній changelog.md.</p>
