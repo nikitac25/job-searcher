@@ -368,6 +368,10 @@
   }
   .kb-hint svg { width: 16px; height: 16px; vertical-align: middle; }
   .kb-hint:hover { opacity: 1; color: var(--accent-bright); }
+  .last-check {
+    color: var(--muted-deep); font-size: 0.7rem;
+    margin-left: 6px; opacity: .85;
+  }
 
   /* Keyboard shortcuts overlay */
   .kb-overlay {
@@ -759,6 +763,7 @@ let searchQuery = '';
 let openCards = new Set();
 let pageTitle = 'Вакансії';
 let hideStale = localStorage.getItem('hideStale') === '1';
+let lastCheckText = '';
 
 // Load page title from config
 async function loadConfig() {
@@ -1320,9 +1325,33 @@ function _hideUndoSnack() {
 
 function status(s) {
   const sb = document.getElementById('statusBar');
+  const checkPart = lastCheckText ? `<span class="last-check">${lastCheckText}</span>` : '';
   sb.innerHTML = s === 'ok'
-    ? `<span class="dot dot-ok"></span> Підключено <span class="kb-hint" onclick="showKbHelp()" title="Keyboard shortcuts">${IC.keyboard}</span>`
+    ? `<span class="dot dot-ok"></span> Підключено${checkPart} <span class="kb-hint" onclick="showKbHelp()" title="Keyboard shortcuts">${IC.keyboard}</span>`
     : `<span class="dot dot-err"></span> Немає зв'язку <span class="kb-hint" onclick="showKbHelp()" title="Keyboard shortcuts">${IC.keyboard}</span>`;
+}
+
+async function loadStatus() {
+  try {
+    const r = await fetch('/api/status');
+    const s = await r.json();
+    if (s.last_check) {
+      const dt = new Date(s.last_check.replace(' ', 'T'));
+      const diffMs = Date.now() - dt.getTime();
+      const diffH = Math.floor(diffMs / 3600000);
+      const diffM = Math.floor((diffMs % 3600000) / 60000);
+      let ago = diffH >= 24
+        ? Math.floor(diffH / 24) + 'д тому'
+        : diffH > 0
+          ? diffH + 'г тому'
+          : diffM + 'хв тому';
+      lastCheckText = `· перевірено ${ago}`;
+      if (s.added !== null) {
+        lastCheckText += s.added > 0 ? ` · +${s.added} нових` : ' · нових немає';
+      }
+      status('ok');
+    }
+  } catch(e) {}
 }
 
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -1670,6 +1699,7 @@ function exportCSV() {
 }
 
 load();
+loadStatus();
 setInterval(poll, REFRESH);
 // Restore saved view mode
 if (activeView === 'list') setView('list');
