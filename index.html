@@ -130,11 +130,28 @@
     padding: 0 0 8px; margin-bottom: 0;
     display: flex; justify-content: space-between; align-items: center;
     letter-spacing: -0.13px; text-transform: uppercase;
+    cursor: pointer; user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
+  .section-hdr:hover { color: var(--text-secondary); }
+  .section-hdr-left {
+    display: flex; align-items: center; gap: 5px;
+  }
+  .section-chevron {
+    color: var(--muted-deep); transition: transform .2s;
+    display: flex; align-items: center;
+  }
+  .section-chevron svg { width: 13px; height: 13px; }
+  .section-hdr.collapsed .section-chevron { transform: rotate(-90deg); }
   .section-count {
     background: transparent; color: var(--muted-deep);
     font-size: 11px; padding: 0; font-weight: 510;
   }
+  .section-body {
+    overflow: hidden;
+    transition: opacity .2s;
+  }
+  .section-body.collapsed { display: none; }
 
   /* Card */
   .card {
@@ -768,6 +785,23 @@ let pageTitle = 'Вакансії';
 let hideStale = localStorage.getItem('hideStale') === '1';
 let lastCheckText = '';
 
+// Collapsed sections tracking (persisted in localStorage)
+function _loadCollapsedSections() {
+  try { return new Set(JSON.parse(localStorage.getItem('collapsedSections') || '[]')); }
+  catch { return new Set(); }
+}
+let collapsedSections = _loadCollapsedSections();
+
+function toggleSection(name) {
+  if (collapsedSections.has(name)) {
+    collapsedSections.delete(name);
+  } else {
+    collapsedSections.add(name);
+  }
+  localStorage.setItem('collapsedSections', JSON.stringify([...collapsedSections]));
+  render();
+}
+
 // Load page title from config
 async function loadConfig() {
   try {
@@ -1168,8 +1202,16 @@ function render() {
     if (!filtered.length) continue;
     total += filtered.length;
 
+    const isSectionCollapsed = collapsedSections.has(section.name);
     html += `<div class="section">
-      <div class="section-hdr">${esc(section.name)}<span class="section-count">${filtered.length}</span></div>`;
+      <div class="section-hdr${isSectionCollapsed ? ' collapsed' : ''}" onclick="toggleSection('${escA(section.name)}')">
+        <span class="section-hdr-left">
+          <span class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
+          ${esc(section.name)}
+        </span>
+        <span class="section-count">${filtered.length}</span>
+      </div>
+      <div class="section-body${isSectionCollapsed ? ' collapsed' : ''}">`;
 
     for (const v of filtered) {
       const sc = v.score !== null ? v.score + '/10' : '?';
@@ -1217,7 +1259,7 @@ function render() {
         </div>
       </div>`;
     }
-    html += '</div>';
+    html += '</div></div>';
   }
 
   if (!total) html = '<div class="empty">Нічого не знайдено</div>';
@@ -1394,6 +1436,10 @@ function toggleExpandAll() {
   allExpanded = !allExpanded;
   const btn = document.getElementById('expandCollapseBtn');
   if (allExpanded) {
+    // Also uncollapse all sections first
+    collapsedSections.clear();
+    localStorage.setItem('collapsedSections', '[]');
+    render();
     document.querySelectorAll('.card:not(.deleting)').forEach(card => {
       card.classList.add('open');
       openCards.add(card.dataset.url);
