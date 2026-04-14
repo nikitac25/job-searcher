@@ -703,6 +703,30 @@
     .card-title { font-size: 16px; letter-spacing: normal; }
     .search-box { width: 280px; }
   }
+
+  /* Sticky controls bar */
+  .sticky-controls {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--bg);
+    /* Slight negative margin so the shadow bleeds under the header edge */
+    margin-left: -12px; margin-right: -12px;
+    padding: 0 12px;
+    transition: box-shadow .2s;
+  }
+  .sticky-controls.scrolled {
+    box-shadow: 0 1px 0 var(--border-subtle), 0 4px 20px rgba(0,0,0,.45);
+  }
+  @media (min-width: 600px) {
+    .sticky-controls { margin-left: -24px; margin-right: -24px; padding: 0 24px; }
+  }
+  @media (min-width: 1024px) {
+    .sticky-controls { margin-left: -40px; margin-right: -40px; padding: 0 40px; }
+  }
+  @media (min-width: 1440px) {
+    .sticky-controls { margin-left: -48px; margin-right: -48px; padding: 0 48px; }
+  }
 </style>
 </head>
 <body>
@@ -715,8 +739,8 @@
   </div>
 </header>
 
+<div class="sticky-controls" id="stickyControls">
 <div class="filters" id="filters"></div>
-<div id="statsPanel" style="display:none"></div>
 <div class="toolbar">
   <div class="sort-group">
     <span class="sort-label">Sort:</span>
@@ -730,6 +754,8 @@
   </div>
   <input class="search-box" type="text" id="searchBox" placeholder="Пошук (кілька слів = AND)..." oninput="onSearch(this.value)">
 </div>
+</div><!-- /sticky-controls -->
+<div id="statsPanel" style="display:none"></div>
 <div class="actions-row">
   <button class="action-btn hidden" id="markAllSeenBtn" onclick="markAllSeen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M20 6 9 17l-5-5"/></svg> Позначити переглянутими</button>
   <button class="action-btn" id="expandCollapseBtn" onclick="toggleExpandAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg> Розгорнути всі</button>
@@ -1754,6 +1780,15 @@ setInterval(poll, REFRESH);
 if (activeView === 'list') setView('list');
 // Restore hide-stale toggle state
 if (hideStale) document.getElementById('hideStaleBtn').classList.add('toggled');
+
+// Sticky controls: add shadow when page is scrolled past the header
+(function() {
+  const ctrl = document.getElementById('stickyControls');
+  if (!ctrl) return;
+  const update = () => ctrl.classList.toggle('scrolled', window.scrollY > 60);
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
 </script>
 </body>
 </html>
