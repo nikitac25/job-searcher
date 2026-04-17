@@ -81,6 +81,15 @@
 </header>
 
 <article>
+  <h2>2026-04-17 03:10</h2>
+  <h3>Негативні ключові слова: пропуск нерелевантних вакансій до виклику Groq API</h3>
+  <p><strong>Проблема/Можливість:</strong> Функція <code>is_relevant()</code> у <code>check_new.py</code> перевіряла лише <em>позитивні</em> ключові слова (looker, bi developer, bi engineer тощо). Через це вакансії на кшталт «Power BI Developer», «Senior BI Developer (MS SQL + Tableau)», «BI Engineer with Qlik Cloud» і «Microsoft Fabric» проходили фільтр і надсилались до Groq API — де отримували оцінку 1–2/10 і відкидались. Сьогодні вночі так витрачено <strong>8 API-викликів</strong> (із яких один викликав обмеження запитів і 30-секундне очікування), а жодна вакансія додана не була.</p>
+  <p><strong>Рішення:</strong> 1) У <code>config.py</code> додано два нових списки: <code>NEGATIVE_TITLE_KEYWORDS</code> — 16 ключових слів, що ідентифікують нерелевантні інструменти (power bi, powerbi, ms sql, microsoft sql, microsoft fabric, azure synapse, qlik, ssrs, ssis, ssas, tableau, microstrategy, cognos, sap bo, sap bw, spotfire); <code>POSITIVE_OVERRIDE_KEYWORDS</code> — слова, що скасовують негативний фільтр (looker, lookml, bigquery, snowflake, dbt) — щоб «Looker + Tableau Developer» все одно пройшов. 2) Функцію <code>is_relevant()</code> у <code>check_new.py</code> розширено: якщо заголовок вакансії містить хоча б одне негативне ключове слово <em>і</em> жодного слова-перевизначення — функція повертає <code>False</code> ще до будь-якого звернення до Groq.</p>
+  <p class="files-changed"><strong>Змінені файли:</strong> config.py, check_new.py</p>
+  <p class="verification"><strong>Перевірка:</strong> <code>venv/bin/python3 -c "import app; print('OK')"</code> та <code>import check_new</code> — без помилок. 12 тест-кейсів з реальних вакансій пройшли успішно: усі 7 нерелевантних вакансій з нічного запуску (Power BI, MS SQL, Tableau, Qlik, Microsoft Fabric) коректно відфільтровані; «Middle Data Analyst / BI Developer», «Senior Analytics Engineer Looker» та «Looker + Tableau Developer» залишились.</p>
+</article>
+
+<article>
   <h2>2026-04-16 03:10</h2>
   <h3>Кнопка «Перевірити зараз»: ручний запуск пошуку вакансій без очікування крону</h3>
   <p><strong>Проблема/Можливість:</strong> Автоматична перевірка нових вакансій запускається лише за розкладом (кожні 2 години). Якщо хотілося перевірити вакансії одразу після додавання нового джерела або в будь-який момент — доводилося або чекати, або запускати <code>check_new.py</code> вручну в терміналі.</p>
