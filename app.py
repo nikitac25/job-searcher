@@ -177,5 +177,42 @@ def api_delete():
     return jsonify({"ok": False, "error": "not found"}), 404
 
 
+_check_running = False
+
+
+@app.route("/api/check", methods=["POST"])
+def api_check():
+    """Trigger check_new.py in a background thread. Idempotent — ignores if already running."""
+    global _check_running
+    if _check_running:
+        return jsonify({"ok": True, "msg": "already running"})
+
+    import subprocess
+    import threading
+
+    def run():
+        global _check_running
+        _check_running = True
+        try:
+            subprocess.run(
+                [sys.executable, os.path.join(BASE_DIR, "check_new.py")],
+                capture_output=True,
+                timeout=300,
+            )
+        except Exception:
+            pass
+        finally:
+            _check_running = False
+
+    threading.Thread(target=run, daemon=True).start()
+    return jsonify({"ok": True, "msg": "started"})
+
+
+@app.route("/api/check/status", methods=["GET"])
+def api_check_status():
+    """Return whether check_new.py is currently running."""
+    return jsonify({"running": _check_running})
+
+
 if __name__ == "__main__":
     app.run(host=WEB_HOST, port=WEB_PORT)

@@ -27,11 +27,17 @@ HEADERS = {
 # Load config — keywords and sources come from config.py
 try:
     from config import TITLE_KEYWORDS, SOURCES
+    from config import NEGATIVE_TITLE_KEYWORDS as _NEG_KW
+    from config import POSITIVE_OVERRIDE_KEYWORDS as _POS_OVERRIDE
 except ImportError:
     TITLE_KEYWORDS = ['design', 'ux', 'ui', 'product design', 'дизайн']
     SOURCES = {}
+    _NEG_KW = []
+    _POS_OVERRIDE = []
 
 KEYWORDS = [k.lower() for k in TITLE_KEYWORDS]
+NEGATIVES = [k.lower() for k in _NEG_KW]
+POSITIVE_OVERRIDES = [k.lower() for k in _POS_OVERRIDE]
 
 
 def log(msg):
@@ -61,9 +67,23 @@ def get_existing_urls():
 
 
 def is_relevant(title):
-    """Check if vacancy title is relevant (UI/UX/Product Design)."""
+    """Check if vacancy title is relevant based on positive/negative keywords.
+
+    Returns False if:
+    - No positive keyword matches, OR
+    - A negative keyword matches AND no positive-override keyword is present
+      (e.g. 'Power BI Developer' is skipped, but 'Looker + Tableau Engineer' is kept).
+    """
     t = title.lower()
-    return any(kw in t for kw in KEYWORDS)
+    if not any(kw in t for kw in KEYWORDS):
+        return False
+    if NEGATIVES:
+        has_neg = any(neg in t for neg in NEGATIVES)
+        if has_neg:
+            has_override = any(pos in t for pos in POSITIVE_OVERRIDES)
+            if not has_override:
+                return False
+    return True
 
 
 # ============================================================

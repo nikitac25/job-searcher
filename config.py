@@ -103,6 +103,38 @@ TITLE_KEYWORDS = [
     "business intelligence",
 ]
 
+# Vacancy titles containing ANY of these keywords are skipped WITHOUT calling
+# the Groq API — unless the title also contains a POSITIVE_OVERRIDE keyword.
+# This saves API quota and avoids rate-limit waits on clearly irrelevant jobs.
+NEGATIVE_TITLE_KEYWORDS = [
+    "power bi",
+    "powerbi",
+    "ms sql",
+    "microsoft sql",
+    "microsoft fabric",
+    "azure synapse",
+    "qlik",
+    "ssrs",
+    "ssis",
+    "ssas",
+    "tableau",
+    "microstrategy",
+    "cognos",
+    "sap bo",
+    "sap bw",
+    "spotfire",
+]
+
+# If the title contains ANY of these, the negative-keyword check is bypassed
+# (e.g. a job requiring both Looker AND Tableau is still worth checking).
+POSITIVE_OVERRIDE_KEYWORDS = [
+    "looker",
+    "lookml",
+    "bigquery",
+    "snowflake",
+    "dbt",
+]
+
 # ============================================================
 # 6. JOB BOARD URLS — customize search queries
 # ============================================================
