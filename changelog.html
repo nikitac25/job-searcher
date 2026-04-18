@@ -81,6 +81,15 @@
 </header>
 
 <article>
+  <h2>2026-04-18 03:10</h2>
+  <h3>Виправлено фрагментацію секції DOU та HTML-ентітіз у заголовках вакансій</h3>
+  <p><strong>Проблема/Можливість:</strong> У <code>vacancies.md</code> з'явилися дві окремі секції для одного джерела: стара <code>## DOU.ua</code> (3 вакансії з квітня) та нова <code>## DOU</code> (1 вакансія від 18.04). Це відбулося через невідповідність: ключ у <code>config.py</code> називався <code>"DOU"</code>, але вже існуюча секція у <code>vacancies.md</code> мала назву <code>"DOU.ua"</code>. Як наслідок, UI показував два окремі розділи для одного джерела, що виглядало заплутано. Додатково: парсери <code>check_dou()</code> та <code>check_workua()</code> не декодували HTML-ентітіз у заголовках — через це вакансія зберігалась із назвою <code>"Supply Chain &amp;amp; Demand"</code> замість коректного <code>"Supply Chain &amp; Demand"</code>.</p>
+  <p><strong>Рішення:</strong> 1) У <code>config.py</code> ключ <code>"DOU"</code> перейменовано на <code>"DOU.ua"</code> — тепер усі нові вакансії з jobs.dou.ua додаватимуться до правильної секції. 2) У <code>check_new.py</code> до функцій <code>check_dou()</code> та <code>check_workua()</code> додано допоміжну функцію декодування HTML-ентітізів (<code>&amp;amp;</code>→<code>&amp;</code>, <code>&amp;lt;</code>→<code>&lt;</code>, <code>&amp;gt;</code>→<code>&gt;</code>, <code>&amp;quot;</code>→<code>"</code>, <code>&amp;#039;</code>→<code>'</code>), аналогічно до вже наявної логіки в <code>check_justjoin()</code>. 3) У <code>vacancies.md</code>: вакансія з секції <code>## DOU</code> перенесена до <code>## DOU.ua</code>, HTML-ентітіз у заголовку виправлено, порожня секція <code>## DOU</code> видалена.</p>
+  <p class="files-changed"><strong>Змінені файли:</strong> config.py, check_new.py, vacancies.md</p>
+  <p class="verification"><strong>Перевірка:</strong> <code>venv/bin/python3 -c "import app; print('OK')"</code> та <code>import check_new</code> — без помилок. <code>parse_vacancies()</code> повертає 4 секції; <code>DOU.ua</code> містить 4 вакансії включно з перенесеною, жодної секції <code>DOU</code> немає. Заголовок вакансії коректно відображає <code>&amp;</code> замість <code>&amp;amp;</code>.</p>
+</article>
+
+<article>
   <h2>2026-04-17 03:10</h2>
   <h3>Негативні ключові слова: пропуск нерелевантних вакансій до виклику Groq API</h3>
   <p><strong>Проблема/Можливість:</strong> Функція <code>is_relevant()</code> у <code>check_new.py</code> перевіряла лише <em>позитивні</em> ключові слова (looker, bi developer, bi engineer тощо). Через це вакансії на кшталт «Power BI Developer», «Senior BI Developer (MS SQL + Tableau)», «BI Engineer with Qlik Cloud» і «Microsoft Fabric» проходили фільтр і надсилались до Groq API — де отримували оцінку 1–2/10 і відкидались. Сьогодні вночі так витрачено <strong>8 API-викликів</strong> (із яких один викликав обмеження запитів і 30-секундне очікування), а жодна вакансія додана не була.</p>

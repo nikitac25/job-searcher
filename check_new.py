@@ -138,13 +138,22 @@ def check_dou(source_key="DOU"):
     existing = get_existing_urls()
     results = []
 
+    def _clean_dou_title(t):
+        t = t.strip()
+        t = re.sub(r'&amp;', '&', t)
+        t = re.sub(r'&lt;', '<', t)
+        t = re.sub(r'&gt;', '>', t)
+        t = re.sub(r'&quot;', '"', t)
+        t = re.sub(r'&#039;', "'", t)
+        return t
+
     # Pattern: <a href="/companies/SLUG/vacancies/ID/">TITLE</a>
     for m in re.finditer(
         r'<a[^>]*href="(https://jobs\.dou\.ua/companies/[^/]+/vacancies/\d+/)[^"]*"[^>]*>\s*([^<]+)',
         html
     ):
         url = m.group(1)
-        title = m.group(2).strip()
+        title = _clean_dou_title(m.group(2))
         if url in existing or not is_relevant(title):
             continue
         results.append({"title": title, "url": url, "section": source_key})
@@ -155,7 +164,7 @@ def check_dou(source_key="DOU"):
         html
     ):
         url = f"https://jobs.dou.ua{m.group(1)}"
-        title = m.group(4).strip()
+        title = _clean_dou_title(m.group(4))
         if url in existing or not is_relevant(title):
             continue
         if not any(r["url"] == url for r in results):
@@ -180,11 +189,20 @@ def check_workua(source_key="Work.ua"):
     existing = get_existing_urls()
     results = []
 
+    def _clean_workua_title(t):
+        t = t.strip()
+        t = re.sub(r'&amp;', '&', t)
+        t = re.sub(r'&lt;', '<', t)
+        t = re.sub(r'&gt;', '>', t)
+        t = re.sub(r'&quot;', '"', t)
+        t = re.sub(r'&#039;', "'", t)
+        return t
+
     # Pattern: <a href="/en/jobs/ID/" ...>TITLE</a>
     for m in re.finditer(r'<a[^>]*href="(/en/jobs/(\d+)/)"[^>]*>\s*([^<]{10,})', html):
         path = m.group(1)
         job_url = f"https://www.work.ua{path}"
-        title = m.group(3).strip()
+        title = _clean_workua_title(m.group(3))
         if job_url in existing or not is_relevant(title):
             continue
         results.append({"title": title, "url": job_url, "section": source_key})

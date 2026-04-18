@@ -151,7 +151,7 @@ SOURCES = {
         "url": "https://djinni.co/jobs/?all_keywords=BI&search_type=basic-search",
         "link_pattern": r'/jobs/(\d+)-',
     },
-    "DOU": {
+    "DOU.ua": {
         "enabled": True,
         "url": "https://jobs.dou.ua/vacancies/?search=BI+Developer",
         "link_pattern": r'/companies/[^/]+/vacancies/\d+/',
