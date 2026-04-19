@@ -711,6 +711,47 @@
     .search-box { width: 280px; }
   }
 
+  /* Kanban board (Pipeline view) */
+  .kanban-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 12px;
+    align-items: start;
+  }
+  .kanban-col {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+  }
+  .kanban-col-hdr {
+    font-size: 11px; font-weight: 590;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .kanban-count {
+    font-size: 11px; color: var(--muted-deep);
+    background: rgba(255,255,255,.04); border: 1px solid var(--border-subtle);
+    border-radius: 9999px; padding: 0 7px; line-height: 18px;
+  }
+  .kanban-empty {
+    font-size: 12px; color: var(--muted-deep);
+    text-align: center; padding: 24px 0; font-style: italic;
+  }
+  @media (max-width: 699px) {
+    .kanban-board { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 399px) {
+    .kanban-board { grid-template-columns: 1fr; }
+  }
+  @media (min-width: 700px) and (max-width: 1023px) {
+    .kanban-board { grid-template-columns: repeat(2, 1fr); }
+  }
+
   /* Sticky controls bar */
   .sticky-controls {
     position: sticky;
@@ -1226,7 +1267,101 @@ function statusTag(url) {
   return `<span class="tag ${cls}">${esc(st)}</span>`;
 }
 
+function renderKanban() {
+  const statuses = getStatuses();
+  const colKeys = ['Applied', 'Interview', 'Offer', 'Rejected'];
+  const cols = {Applied:[], Interview:[], Offer:[], Rejected:[]};
+  const colColors = {
+    Applied: 'var(--accent-bright)',
+    Interview: 'var(--green-bright)',
+    Offer: '#2ed573',
+    Rejected: 'var(--muted)'
+  };
+  const colBorders = {
+    Applied: 'rgba(113,112,255,.3)',
+    Interview: 'rgba(16,185,129,.25)',
+    Offer: 'rgba(46,213,115,.2)',
+    Rejected: 'rgba(255,255,255,.06)'
+  };
+
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      const st = statuses[v.url];
+      if (st && cols.hasOwnProperty(st)) {
+        cols[st].push({...v, _section: s.name});
+      }
+    }
+  }
+
+  let html = '<div class="kanban-board">';
+  for (const colKey of colKeys) {
+    const vacancies = cols[colKey];
+    html += `<div class="kanban-col" style="border-color:${colBorders[colKey]}">
+      <div class="kanban-col-hdr">
+        <span style="color:${colColors[colKey]}">${colKey}</span>
+        <span class="kanban-count">${vacancies.length}</span>
+      </div>`;
+    if (!vacancies.length) {
+      html += `<div class="kanban-empty">Порожньо</div>`;
+    } else {
+      for (const v of vacancies) {
+        const sc = v.score !== null ? v.score + '/10' : '?';
+        const isOpen = openCards.has(v.url);
+        html += `
+        <div class="card ${isOpen ? 'open' : ''}${isStale(v) ? ' stale' : ''}" data-url="${escA(v.url)}">
+          <div class="card-header" onclick="toggle(this)">
+            <div class="chevron">${IC.chevDown}</div>
+            <div class="score-badge ${scoreClass(v.score)}">${sc}</div>
+            <div class="card-info">
+              <a class="card-title" href="${escA(v.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(v.title)}</a>
+              <div class="card-meta">
+                ${v._section ? `<span class="tag" style="color:var(--muted-deep);border-color:rgba(255,255,255,.04)">${esc(v._section)}</span>` : ''}
+                ${v.remote ? `<span class="tag">${esc(v.remote)}</span>` : ''}
+                ${v.salary && v.salary !== 'Не вказана' ? `<span class="tag tag-salary">${esc(v.salary)}</span>` : ''}
+                ${getDateTag(v)}
+                ${isFav(v.url) ? '<span class="tag tag-fav">fav</span>' : ''}
+                ${hasNote(v.url) ? '<span class="tag tag-note">note</span>' : ''}
+              </div>
+            </div>
+            <div class="card-actions">
+              <select class="status-sel" onclick="event.stopPropagation()" onchange="setStatus('${escA(v.url)}', this.value)" title="Статус">
+                ${STATUS_OPTIONS.map(s => `<option value="${s}"${(getStatus(v.url)||'Status')===s?' selected':''}>${s}</option>`).join('')}
+              </select>
+              <button class="btn-icon btn-fav ${isFav(v.url)?'faved':''}" onclick="event.stopPropagation(); toggleFav('${escA(v.url)}')" title="В обране">${isFav(v.url)?IC.starFill:IC.star}</button>
+              <button class="btn-icon btn-del" onclick="event.stopPropagation(); del(this)" title="Видалити">${IC.x}</button>
+            </div>
+          </div>
+          <div class="card-panel">
+            <div class="panel-inner">
+              ${v.summary
+                ? `<div class="panel-label">Аналіз</div><div class="panel-text">${esc(v.summary)}</div>`
+                : '<div class="panel-no-analysis">Аналіз ще не проведено</div>'
+              }
+              <div class="note-area">
+                <div class="note-label">Нотатка <button class="note-edit-btn" onclick="event.stopPropagation(); startEditNote('${escA(v.url)}')">${hasNote(v.url) ? 'Редагувати' : 'Додати'}</button></div>
+                ${hasNote(v.url) ? `<div class="note-text">${esc(getNote(v.url))}</div>` : `<div class="note-text empty">Немає нотатки</div>`}
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+
+  const total = colKeys.reduce((a, k) => a + cols[k].length, 0);
+  app.innerHTML = html;
+  document.querySelectorAll('.card.open .card-panel').forEach(p => { p.style.maxHeight = 'none'; });
+  document.getElementById('meta').textContent = `Pipeline: ${total} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
+}
+
 function render() {
+  if (activeFilter === 'pipeline') {
+    renderKanban();
+    return;
+  }
   let html = '';
   let total = 0;
 
