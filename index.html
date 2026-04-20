@@ -583,6 +583,10 @@
   .action-btn:active { transform: scale(.97); }
   .action-btn.hidden { display: none; }
   .action-btn.toggled { background: rgba(94,106,210,.12); border-color: rgba(113,112,255,.3); color: var(--accent-bright); }
+  .action-btn.danger-confirm {
+    background: rgba(255,71,87,.12); border-color: rgba(255,71,87,.3); color: var(--danger);
+  }
+  .action-btn.danger-confirm:hover { background: rgba(255,71,87,.2); }
 
   /* Check now button spin animation */
   @keyframes spin {
@@ -810,6 +814,7 @@
   <button class="action-btn" id="expandCollapseBtn" onclick="toggleExpandAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg> Розгорнути всі</button>
   <button class="action-btn" onclick="exportCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Експорт CSV</button>
   <button class="action-btn" id="hideStaleBtn" onclick="toggleHideStale()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> Сховати застарілі</button>
+  <button class="action-btn hidden" id="bulkDelBtn" onclick="bulkDelete()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Видалити видимі</button>
 </div>
 <div id="app"></div>
 
@@ -1022,6 +1027,7 @@ async function load() {
     render();
     updateMarkAllSeenBtn();
     updateHideStaleBtn();
+    updateBulkDeleteBtn();
     updateTabTitle();
     if (statsVisible) renderStats();
     status('ok');
@@ -1355,6 +1361,7 @@ function renderKanban() {
   app.innerHTML = html;
   document.querySelectorAll('.card.open .card-panel').forEach(p => { p.style.maxHeight = 'none'; });
   document.getElementById('meta').textContent = `Pipeline: ${total} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
+  updateBulkDeleteBtn();
 }
 
 function render() {
@@ -1437,6 +1444,7 @@ function render() {
   document.querySelectorAll('.card.open .card-panel').forEach(p => { p.style.maxHeight = 'none'; });
   document.getElementById('meta').textContent =
     `Всього: ${total} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
+  updateBulkDeleteBtn();
 }
 
 function toggle(hdr) {
@@ -1914,6 +1922,83 @@ function exportCSV() {
   a.download = `vacancies-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// Bulk delete: delete all currently visible (filtered/searched) vacancies
+const _trashIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+let _bulkDelConfirmTimer = null;
+
+function _getVisibleUrls() {
+  if (activeFilter === 'pipeline') return [];
+  const urls = [];
+  for (const section of allData) {
+    if (SKIP.includes(section.name)) continue;
+    for (const v of section.items) {
+      if (passFilter(v) && matchesSearch(v) && (!hideStale || !isStale(v))) {
+        urls.push(v.url);
+      }
+    }
+  }
+  return urls;
+}
+
+function updateBulkDeleteBtn() {
+  const btn = document.getElementById('bulkDelBtn');
+  if (!btn) return;
+  const urls = _getVisibleUrls();
+  const count = urls.length;
+  // Show only when a non-default filter or non-empty search is active
+  const show = count > 0 && (activeFilter !== 'all' || searchQuery !== '');
+  btn.classList.toggle('hidden', !show);
+  if (show && !btn.classList.contains('danger-confirm')) {
+    btn.innerHTML = `${_trashIcon} Видалити видимі (${count})`;
+  }
+}
+
+async function bulkDelete() {
+  const btn = document.getElementById('bulkDelBtn');
+  if (!btn || btn.disabled) return;
+  const urls = _getVisibleUrls();
+  if (!urls.length) return;
+
+  // Two-click confirm: first click arms the button, second click within 3s confirms
+  if (!btn.classList.contains('danger-confirm')) {
+    btn.classList.add('danger-confirm');
+    btn.innerHTML = `${_trashIcon} Підтвердити видалення ${urls.length}`;
+    clearTimeout(_bulkDelConfirmTimer);
+    _bulkDelConfirmTimer = setTimeout(() => {
+      btn.classList.remove('danger-confirm');
+      updateBulkDeleteBtn();
+    }, 3000);
+    return;
+  }
+
+  // Confirmed — delete all visible vacancies via API
+  clearTimeout(_bulkDelConfirmTimer);
+  btn.disabled = true;
+  btn.innerHTML = `${_trashIcon} Видалення...`;
+
+  // Commit any pending single-delete first
+  if (_pendingDelUrl && _pendingDelTimer) {
+    clearTimeout(_pendingDelTimer);
+    _pendingDelTimer = null;
+    _commitDel(_pendingDelUrl);
+  }
+  _hideUndoSnack();
+
+  for (const url of urls) {
+    try {
+      await fetch('/api/vacancies', {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({url})
+      });
+    } catch(e) {}
+  }
+
+  btn.disabled = false;
+  btn.classList.remove('danger-confirm');
+  await load();
 }
 
 // "Check now" manual trigger
