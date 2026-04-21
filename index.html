@@ -1674,6 +1674,7 @@ function toggleStats() {
 function renderStats() {
   let total = 0, scored = 0, sumScore = 0, favCount = 0, noteCount = 0;
   let high = 0, mid = 0, low = 0, none = 0;
+  // sources: { name -> { count, sum, scored } }
   const sources = {};
   const favs = getFavUrls();
   const statuses = getStatuses();
@@ -1687,9 +1688,14 @@ function renderStats() {
       if (notesData[v.url]) noteCount++;
       const st = statuses[v.url];
       if (st && pipeline.hasOwnProperty(st)) pipeline[st]++;
-      sources[s.name] = (sources[s.name] || 0) + 1;
+      if (!sources[s.name]) sources[s.name] = { count: 0, sum: 0, scored: 0 };
+      sources[s.name].count++;
       if (v.score === null) { none++; }
-      else { scored++; sumScore += v.score; if (v.score >= 6) high++; else if (v.score >= 4) mid++; else low++; }
+      else {
+        scored++; sumScore += v.score;
+        sources[s.name].sum += v.score; sources[s.name].scored++;
+        if (v.score >= 6) high++; else if (v.score >= 4) mid++; else low++;
+      }
     }
   }
   const avg = scored ? (sumScore / scored).toFixed(1) : '—';
@@ -1697,8 +1703,16 @@ function renderStats() {
   const pipelineTotal = pipeline.Applied + pipeline.Interview + pipeline.Offer + pipeline.Rejected;
 
   let sourcesHtml = '';
-  for (const [name, cnt] of Object.entries(sources).sort((a,b) => b[1] - a[1])) {
-    sourcesHtml += `<span class="source-chip">${esc(name)}<b>${cnt}</b></span>`;
+  for (const [name, data] of Object.entries(sources).sort((a,b) => b[1].count - a[1].count)) {
+    const srcAvg = data.scored ? (data.sum / data.scored).toFixed(1) : null;
+    const avgColor = srcAvg === null ? 'var(--muted-deep)'
+      : srcAvg >= 6 ? 'var(--green-bright)'
+      : srcAvg >= 4 ? 'var(--yellow)'
+      : 'var(--red)';
+    const avgBadge = srcAvg !== null
+      ? ` <span style="color:${avgColor};font-size:10px;margin-left:2px" title="Середній бал">★${srcAvg}</span>`
+      : '';
+    sourcesHtml += `<span class="source-chip">${esc(name)}<b>${data.count}</b>${avgBadge}</span>`;
   }
 
   document.getElementById('statsPanel').innerHTML = `
@@ -2055,6 +2069,17 @@ async function triggerCheck() {
 load();
 loadStatus();
 setInterval(poll, REFRESH);
+// Poll when user returns to the tab (catches new vacancies added while tab was inactive)
+let _lastVisibilityPoll = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    const now = Date.now();
+    if (now - _lastVisibilityPoll > 60000) { // at most once per minute
+      _lastVisibilityPoll = now;
+      poll();
+    }
+  }
+});
 // Restore saved view mode
 if (activeView === 'list') setView('list');
 // Restore hide-stale toggle state

@@ -123,6 +123,10 @@ NEGATIVE_TITLE_KEYWORDS = [
     "sap bo",
     "sap bw",
     "spotfire",
+    "quicksight",
+    "amazon quicksight",
+    "metabase",
+    "google data studio",
 ]
 
 # If the title contains ANY of these, the negative-keyword check is bypassed
