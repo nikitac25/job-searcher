@@ -398,6 +398,7 @@
   .kb-modal {
     background: var(--surface); border: 1px solid rgba(255,255,255,0.08);
     border-radius: 12px; padding: 20px 24px; max-width: 340px; width: 90%;
+    max-height: 90vh; overflow-y: auto;
     box-shadow: rgba(0,0,0,0) 0px 8px 2px, rgba(0,0,0,0.01) 0px 5px 2px, rgba(0,0,0,0.04) 0px 3px 2px, rgba(0,0,0,0.07) 0px 1px 1px, rgba(0,0,0,0.08) 0px 0px 1px;
   }
   .kb-modal h3 {
@@ -1792,6 +1793,7 @@ function showKbHelp() {
   overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
   overlay.innerHTML = `<div class="kb-modal">
     <h3>Клавіатурні скорочення</h3>
+    <div class="kb-row" style="padding-top:0;margin-top:0"><span style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Навігація по вакансіях</span></div>
     <div class="kb-row"><span class="kb-key">j</span><span class="kb-desc">Наступна вакансія</span></div>
     <div class="kb-row"><span class="kb-key">k</span><span class="kb-desc">Попередня вакансія</span></div>
     <div class="kb-row"><span class="kb-key">Enter</span><span class="kb-desc">Розгорнути / згорнути</span></div>
@@ -1800,6 +1802,18 @@ function showKbHelp() {
     <div class="kb-row"><span class="kb-key">s</span><span class="kb-desc">Змінити статус (pipeline)</span></div>
     <div class="kb-row"><span class="kb-key">n</span><span class="kb-desc">Редагувати нотатку</span></div>
     <div class="kb-row"><span class="kb-key">x</span><span class="kb-desc">Видалити вакансію</span></div>
+    <div class="kb-row" style="padding-top:8px;margin-top:4px;border-top:1px solid var(--border-subtle)"><span style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Фільтри</span></div>
+    <div class="kb-row"><span class="kb-key">1</span><span class="kb-desc">Всі</span></div>
+    <div class="kb-row"><span class="kb-key">2</span><span class="kb-desc">Fav</span></div>
+    <div class="kb-row"><span class="kb-key">3</span><span class="kb-desc">New</span></div>
+    <div class="kb-row"><span class="kb-key">4</span><span class="kb-desc">Hot (≥6)</span></div>
+    <div class="kb-row"><span class="kb-key">5</span><span class="kb-desc">OK (4–5)</span></div>
+    <div class="kb-row"><span class="kb-key">6</span><span class="kb-desc">Skip (&lt;4)</span></div>
+    <div class="kb-row"><span class="kb-key">7</span><span class="kb-desc">Notes</span></div>
+    <div class="kb-row"><span class="kb-key">8</span><span class="kb-desc">Pipeline</span></div>
+    <div class="kb-row" style="padding-top:8px;margin-top:4px;border-top:1px solid var(--border-subtle)"><span style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Дії</span></div>
+    <div class="kb-row"><span class="kb-key">c</span><span class="kb-desc">Перевірити вакансії зараз</span></div>
+    <div class="kb-row"><span class="kb-key">r</span><span class="kb-desc">Оновити список</span></div>
     <div class="kb-row"><span class="kb-key">v</span><span class="kb-desc">Перемкнути вигляд (картки/список)</span></div>
     <div class="kb-row"><span class="kb-key">h</span><span class="kb-desc">Сховати/показати застарілі</span></div>
     <div class="kb-row"><span class="kb-key">/</span><span class="kb-desc">Фокус на пошук</span></div>
@@ -1894,6 +1908,25 @@ document.addEventListener('keydown', (e) => {
       // Clear focus
       cards.forEach(c => c.classList.remove('kb-focus'));
       focusIdx = -1;
+      break;
+    // Number keys: switch active filter
+    case '1': setFilter('all'); break;
+    case '2': setFilter('fav'); break;
+    case '3': setFilter('new'); break;
+    case '4': setFilter('hot'); break;
+    case '5': setFilter('ok'); break;
+    case '6': setFilter('skip'); break;
+    case '7': setFilter('notes'); break;
+    case '8': setFilter('pipeline'); break;
+    // c: trigger Check Now (if not already running)
+    case 'c': {
+      const checkBtn = document.getElementById('checkNowBtn');
+      if (checkBtn && !checkBtn.classList.contains('checking')) triggerCheck();
+      break;
+    }
+    // r: manual refresh (poll for new vacancies right now)
+    case 'r':
+      poll();
       break;
   }
 });
