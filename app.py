@@ -144,13 +144,15 @@ def api_status():
     """Return info about the last vacancy check run (from check.log)."""
     log_file = os.path.join(BASE_DIR, "check.log")
     if not os.path.exists(log_file):
-        return jsonify({"last_check": None, "added": None})
+        return jsonify({"last_check": None, "added": None, "sources": {}, "errors": []})
 
     with open(log_file, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
     last_check = None
     added = None
+    sources = {}   # {source_key: count_new}
+    errors = []    # list of short error descriptions
 
     # Scan backwards to find the most recent run info
     for line in reversed(lines):
@@ -163,10 +165,26 @@ def api_status():
         done = re.search(r'Done\. Added (\d+) vacanc', line)
         if done and added is None:
             added = int(done.group(1))
+        # Newer format: "Found N new on TYPE (SOURCE_KEY)"
+        src_new = re.search(r'Found (\d+) new on \S+ \(([^)]+)\)', line)
+        if src_new:
+            sources[src_new.group(2)] = int(src_new.group(1))
+        # Older format: "Found N new on SOURCE_NAME"
+        elif re.search(r'Found (\d+) new on (\S+)$', line):
+            m = re.search(r'Found (\d+) new on (\S+)$', line)
+            if m and m.group(2) not in sources:
+                sources[m.group(2)] = int(m.group(1))
+        # Fetch errors: "Fetch error for URL: message"
+        err = re.search(r'Fetch error for (https?://\S+):\s*(.+)$', line)
+        if err:
+            short_err = err.group(2)[:60]
+            if short_err not in errors:
+                errors.append(short_err)
         if 'Starting vacancy check' in line and last_check is not None:
             break
 
-    return jsonify({"last_check": last_check, "added": added})
+    return jsonify({"last_check": last_check, "added": added,
+                    "sources": sources, "errors": errors})
 
 
 @app.route("/api/vacancies", methods=["DELETE"])

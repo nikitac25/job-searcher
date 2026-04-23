@@ -589,6 +589,47 @@
   }
   .action-btn.danger-confirm:hover { background: rgba(255,71,87,.2); }
 
+  /* Last-check detail popup */
+  .check-detail-popup {
+    position: fixed; bottom: 44px; right: 16px;
+    background: var(--surface); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px; padding: 12px 14px;
+    font-size: 12px; color: var(--text-secondary);
+    box-shadow: 0 4px 24px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04);
+    z-index: 50; min-width: 200px; max-width: 280px;
+    transform: translateY(8px); opacity: 0;
+    transition: transform .25s cubic-bezier(.4,0,.2,1), opacity .25s;
+    pointer-events: none;
+  }
+  .check-detail-popup.visible {
+    transform: translateY(0); opacity: 1; pointer-events: auto;
+  }
+  .check-detail-popup h4 {
+    font-size: 11px; font-weight: 590;
+    text-transform: uppercase; letter-spacing: .5px;
+    color: var(--muted); margin-bottom: 8px;
+  }
+  .check-detail-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 3px 0;
+  }
+  .check-detail-src { color: var(--text-secondary); }
+  .check-detail-cnt {
+    font-weight: 590; font-size: 12px;
+    min-width: 20px; text-align: right;
+  }
+  .check-detail-cnt.has-new { color: var(--green-bright); }
+  .check-detail-err { color: var(--red); font-size: 11px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-subtle); }
+  .check-info-btn {
+    display: inline-flex; align-items: center; gap: 3px;
+    color: var(--muted-deep); cursor: pointer;
+    font-size: 0.7rem; padding: 0 4px;
+    border-radius: 4px; transition: color .15s;
+    vertical-align: middle;
+  }
+  .check-info-btn:hover { color: var(--accent-bright); }
+  .check-info-btn svg { width: 11px; height: 11px; }
+
   /* Check now button spin animation */
   @keyframes spin {
     to { transform: rotate(360deg); }
@@ -819,6 +860,8 @@
 </div>
 <div id="app"></div>
 
+<div class="check-detail-popup" id="checkDetailPopup"></div>
+
 <div class="undo-snack" id="undoSnack">
   <div class="undo-snack-timer"><div class="undo-snack-timer-fill" id="undoTimerFill"></div></div>
   <span>Вакансію видалено</span>
@@ -865,6 +908,8 @@ let openCards = new Set();
 let pageTitle = 'Вакансії';
 let hideStale = localStorage.getItem('hideStale') === '1';
 let lastCheckText = '';
+let lastCheckSources = {};  // {source_key: count}
+let lastCheckErrors = [];   // list of error strings
 
 // Collapsed sections tracking (persisted in localStorage)
 function _loadCollapsedSections() {
@@ -1548,10 +1593,57 @@ function _hideUndoSnack() {
 
 function status(s) {
   const sb = document.getElementById('statusBar');
-  const checkPart = lastCheckText ? `<span class="last-check">${lastCheckText}</span>` : '';
+  const hasDetail = Object.keys(lastCheckSources).length > 0 || lastCheckErrors.length > 0;
+  const infoBtn = hasDetail
+    ? ` <span class="check-info-btn" onclick="toggleCheckDetail(event)" title="Деталі перевірки"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>`
+    : '';
+  const checkPart = lastCheckText ? `<span class="last-check">${lastCheckText}${infoBtn}</span>` : '';
   sb.innerHTML = s === 'ok'
     ? `<span class="dot dot-ok"></span> Підключено${checkPart} <span class="kb-hint" onclick="showKbHelp()" title="Keyboard shortcuts">${IC.keyboard}</span>`
     : `<span class="dot dot-err"></span> Немає зв'язку <span class="kb-hint" onclick="showKbHelp()" title="Keyboard shortcuts">${IC.keyboard}</span>`;
+}
+
+let _checkDetailVisible = false;
+function toggleCheckDetail(e) {
+  e.stopPropagation();
+  const popup = document.getElementById('checkDetailPopup');
+  _checkDetailVisible = !_checkDetailVisible;
+  if (_checkDetailVisible) {
+    // Build popup content
+    const srcEntries = Object.entries(lastCheckSources).sort((a, b) => b[1] - a[1]);
+    let html = '<h4>Остання перевірка — по джерелах</h4>';
+    if (srcEntries.length) {
+      for (const [src, cnt] of srcEntries) {
+        const cntClass = cnt > 0 ? 'has-new' : '';
+        html += `<div class="check-detail-row">
+          <span class="check-detail-src">${esc(src)}</span>
+          <span class="check-detail-cnt ${cntClass}">${cnt > 0 ? '+' + cnt : '0'}</span>
+        </div>`;
+      }
+    } else {
+      html += '<div style="color:var(--muted-deep);font-size:11px">Немає даних по джерелах</div>';
+    }
+    if (lastCheckErrors.length) {
+      html += `<div class="check-detail-err">`;
+      for (const err of lastCheckErrors) {
+        html += `<div>⚠ ${esc(err)}</div>`;
+      }
+      html += '</div>';
+    }
+    popup.innerHTML = html;
+    popup.classList.add('visible');
+    // Close on outside click
+    setTimeout(() => {
+      document.addEventListener('click', _closeCheckDetail, { once: true });
+    }, 0);
+  } else {
+    popup.classList.remove('visible');
+  }
+}
+
+function _closeCheckDetail() {
+  document.getElementById('checkDetailPopup').classList.remove('visible');
+  _checkDetailVisible = false;
 }
 
 async function loadStatus() {
@@ -1572,6 +1664,9 @@ async function loadStatus() {
       if (s.added !== null) {
         lastCheckText += s.added > 0 ? ` · +${s.added} нових` : ' · нових немає';
       }
+      // Store per-source data for the detail popup
+      lastCheckSources = s.sources || {};
+      lastCheckErrors = s.errors || [];
       status('ok');
     }
   } catch(e) {}

@@ -81,6 +81,15 @@
 </header>
 
 <article>
+  <h2>2026-04-23 03:10</h2>
+  <h3>Деталі перевірки по джерелах: попап «ⓘ» у рядку статусу</h3>
+  <p><strong>Проблема/Можливість:</strong> Рядок статусу внизу показував лише «перевірено Xг тому · +N нових» — без жодного розбиття по джерелах. Якщо Djinni давав timeout (як сьогодні вночі), корпус «Fetch error» потрапляв у check.log, але в UI нічого не змінювалось: неможливо було зрозуміти, яке джерело впало або скільки вакансій знайдено на кожному. Отже, зниклі вакансії з Djinni виглядали як «нових немає», а не як помилка мережі.</p>
+  <p><strong>Рішення:</strong> 1) <strong>Backend</strong>: розширено ендпоінт <code>GET /api/status</code> у <code>app.py</code> — тепер він парсить <code>check.log</code> і повертає два нових поля: <code>sources</code> — словник <code>&#123;source_key: count_new&#125;</code> (кількість нових вакансій на кожному джерелі з останнього запуску) і <code>errors</code> — список рядків помилок типу «The read operation timed out». Підтримуються обидва формати логу: старий (<code>Found N new on DOU</code>) і новий (<code>Found N new on DOU (DOU.ua)</code>). Рядки <code>Fetch error for URL: message</code> збираються в список. 2) <strong>Frontend</strong>: у <code>loadStatus()</code> збережено нові поля в <code>lastCheckSources</code>/<code>lastCheckErrors</code>. У <code>status()</code> додано маленьку кнопку «ⓘ» (клас <code>.check-info-btn</code>) — видима тільки коли є дані по джерелах або помилки. Клік по «ⓘ» відкриває <code>.check-detail-popup</code>: плаваючий попап над рядком статусу справа зі списком джерел та кількістю знайдених вакансій (<code>+N</code> зеленим, <code>0</code> сірим) та секцією «⚠ помилки». Клік поза попапом — закриває його. Додано CSS для <code>.check-detail-popup</code>, <code>.check-detail-row</code>, <code>.check-info-btn</code> з анімацією появи.</p>
+  <p class="files-changed"><strong>Змінені файли:</strong> app.py, index.html</p>
+  <p class="verification"><strong>Перевірка:</strong> <code>venv/bin/python3 -c "import app; print('OK')"</code> — без помилок. <code>/api/status</code> тестований через test_client: для незавершеного запуску 2026-04-23 03:03 повертає <code>sources={}</code>, <code>errors=["The read operation timed out"]</code>, <code>last_check="2026-04-23 03:03:34"</code>, <code>added=null</code> — коректно відображає timeout Djinni. Всі нові JS-ідентифікатори (<code>toggleCheckDetail</code>, <code>_closeCheckDetail</code>, <code>lastCheckSources</code>, <code>lastCheckErrors</code>, <code>check-detail-popup</code>) присутні у файлі.</p>
+</article>
+
+<article>
   <h2>2026-04-22 03:10</h2>
   <h3>Числові клавіші 1–8 для перемикання фільтрів + `c` і `r` як нові швидкі клавіші</h3>
   <p><strong>Проблема/Можливість:</strong> Клавіатурна навігація по картках (j/k/Enter/o/f/s/n/x) вже була, але щоб переключитися між фільтрами (All / Fav / New / Hot / OK / Skip / Notes / Pipeline) доводилося тягнутися за мишею. При перегляді десятків вакансій це створює зайвий перехід контексту: клавіші → миша → клавіші. Аналогічно, «Перевірити зараз» і «Оновити» не мали жодної клавіші — потрібен клік по кнопці.</p>
