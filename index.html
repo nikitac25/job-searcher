@@ -907,9 +907,22 @@ let searchQuery = '';
 let openCards = new Set();
 let pageTitle = 'Вакансії';
 let hideStale = localStorage.getItem('hideStale') === '1';
-let lastCheckText = '';
+let lastCheckTs = null;      // raw ISO datetime string of last check
+let lastCheckAdded = null;  // number added in last check (null = unknown)
 let lastCheckSources = {};  // {source_key: count}
 let lastCheckErrors = [];   // list of error strings
+
+function _computeAgo(isoStr) {
+  if (!isoStr) return '';
+  const dt = new Date(isoStr.replace(' ', 'T'));
+  const diffMs = Date.now() - dt.getTime();
+  const diffH = Math.floor(diffMs / 3600000);
+  const diffM = Math.floor((diffMs % 3600000) / 60000);
+  if (diffH >= 24) return Math.floor(diffH / 24) + 'д тому';
+  if (diffH > 0) return diffH + 'г тому';
+  if (diffM > 0) return diffM + 'хв тому';
+  return 'щойно';
+}
 
 // Collapsed sections tracking (persisted in localStorage)
 function _loadCollapsedSections() {
@@ -1488,8 +1501,11 @@ function render() {
   app.innerHTML = html;
   // Restore max-height for open cards after DOM rebuild
   document.querySelectorAll('.card.open .card-panel').forEach(p => { p.style.maxHeight = 'none'; });
-  document.getElementById('meta').textContent =
-    `Всього: ${total} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
+  const totalAll = allData.reduce((acc, s) => SKIP.includes(s.name) ? acc : acc + s.items.length, 0);
+  const isFiltered = activeFilter !== 'all' || !!searchQuery;
+  document.getElementById('meta').textContent = isFiltered
+    ? `Показано: ${total} з ${totalAll} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
+    : `Всього: ${total} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
   updateBulkDeleteBtn();
 }
 
@@ -1597,7 +1613,13 @@ function status(s) {
   const infoBtn = hasDetail
     ? ` <span class="check-info-btn" onclick="toggleCheckDetail(event)" title="Деталі перевірки"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>`
     : '';
-  const checkPart = lastCheckText ? `<span class="last-check">${lastCheckText}${infoBtn}</span>` : '';
+  let checkPart = '';
+  if (lastCheckTs) {
+    const ago = _computeAgo(lastCheckTs);
+    let txt = `· перевірено ${ago}`;
+    if (lastCheckAdded !== null) txt += lastCheckAdded > 0 ? ` · +${lastCheckAdded} нових` : ' · нових немає';
+    checkPart = `<span class="last-check">${txt}${infoBtn}</span>`;
+  }
   sb.innerHTML = s === 'ok'
     ? `<span class="dot dot-ok"></span> Підключено${checkPart} <span class="kb-hint" onclick="showKbHelp()" title="Keyboard shortcuts">${IC.keyboard}</span>`
     : `<span class="dot dot-err"></span> Немає зв'язку <span class="kb-hint" onclick="showKbHelp()" title="Keyboard shortcuts">${IC.keyboard}</span>`;
@@ -1651,20 +1673,8 @@ async function loadStatus() {
     const r = await fetch('/api/status');
     const s = await r.json();
     if (s.last_check) {
-      const dt = new Date(s.last_check.replace(' ', 'T'));
-      const diffMs = Date.now() - dt.getTime();
-      const diffH = Math.floor(diffMs / 3600000);
-      const diffM = Math.floor((diffMs % 3600000) / 60000);
-      let ago = diffH >= 24
-        ? Math.floor(diffH / 24) + 'д тому'
-        : diffH > 0
-          ? diffH + 'г тому'
-          : diffM + 'хв тому';
-      lastCheckText = `· перевірено ${ago}`;
-      if (s.added !== null) {
-        lastCheckText += s.added > 0 ? ` · +${s.added} нових` : ' · нових немає';
-      }
-      // Store per-source data for the detail popup
+      lastCheckTs = s.last_check;
+      lastCheckAdded = s.added !== undefined ? s.added : null;
       lastCheckSources = s.sources || {};
       lastCheckErrors = s.errors || [];
       status('ok');
@@ -2197,6 +2207,8 @@ async function triggerCheck() {
 load();
 loadStatus();
 setInterval(poll, REFRESH);
+// Re-render status bar every 60s so "перевірено Xхв тому" stays current
+setInterval(() => { if (lastCheckTs) status('ok'); }, 60000);
 // Poll when user returns to the tab (catches new vacancies added while tab was inactive)
 let _lastVisibilityPoll = 0;
 document.addEventListener('visibilitychange', () => {
