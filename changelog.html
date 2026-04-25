@@ -81,6 +81,15 @@
 </header>
 
 <article>
+  <h2>2026-04-25 03:10</h2>
+  <h3>Дедуплікація вакансій за нормалізованим заголовком (крос-раново)</h3>
+  <p><strong>Проблема/Можливість:</strong> Існуюча дедуплікація у <code>check_new.py</code> порівнювала лише URL-адреси проти вже збережених у <code>vacancies.md</code>. Коли компанія перепублікує ту ж вакансію з іншим URL (NoFluffJobs додає суфікси <code>-1</code>, <code>-2</code> тощо для повторних постів), новий URL не збігається зі старим — і вакансія потрапляє до списку знову. Це вже сталося: у <code>vacancies.md</code> з'явилися два записи «Microstrategy Bi Developer Antal Remote» — з URL <code>antal-remote-2</code> (09.04) і <code>antal-remote-1</code> (13.04). На кожну таку дублікацію витрачається виклик Groq API та місце у списку.</p>
+  <p><strong>Рішення:</strong> 1) У <code>check_new.py</code> додано функцію <code>normalize_title(title)</code> — нормалізує заголовок: переводить у нижній регістр, видаляє розділові знаки, стискає пробіли. Приклад: <code>"Senior BI Engineer (XTB) — Remote"</code> → <code>"senior bi engineer xtb remote"</code>. 2) Додано функцію <code>get_existing_normalized_titles()</code> — читає <code>vacancies.md</code> і повертає множину нормалізованих заголовків. 3) У <code>main()</code> перед аналізом тепер фільтруються кандидати, чий нормалізований заголовок вже є у файлі — такі пропускаються з повідомленням <code>"Skipping (title already in MD)"</code>. 4) У <code>add_vacancy_to_md()</code> додано другу лінію захисту: якщо нормалізований заголовок вже є у контенті файлу — вакансія не додається навіть якщо URL новий. 5) <strong>Очищення існуючих даних:</strong> видалено дублікат «Microstrategy Bi Developer Antal Remote» (запис від 13.04, URL <code>antal-remote-1</code>) з <code>vacancies.md</code> та відповідний аналіз з <code>analyses.json</code>.</p>
+  <p class="files-changed"><strong>Змінені файли:</strong> check_new.py, vacancies.md, analyses.json</p>
+  <p class="verification"><strong>Перевірка:</strong> <code>venv/bin/python3 -c "import app; print('OK')"</code> — без помилок. Тест нормалізації: 5 заголовків нормалізовані коректно включно з кирилично-змішаними символами та тире. <code>get_existing_normalized_titles()</code> повертає 12 унікальних заголовків — дублікат відсутній. Перевірено: після видалення запис <code>antal-remote-1</code> зник з <code>vacancies.md</code> і <code>analyses.json</code>.</p>
+</article>
+
+<article>
   <h2>2026-04-24 03:10</h2>
   <h3>Живий таймер у рядку статусу + «Показано X з Y» при фільтрації</h3>
   <p><strong>Проблема/Можливість:</strong> Рядок статусу показував «перевірено Xхв тому», але цей текст обчислювався один раз при завантаженні сторінки і більше не оновлювався. Якщо залишити вкладку відкритою на кілька годин, індикатор залишався застарілим — показував «0хв тому» замість «5г тому». Окремо: при активному фільтрі (наприклад, «Hot») мета-рядок заголовку показував лише кількість видимих вакансій без контексту — незрозуміло, скільки всього є у списку.</p>

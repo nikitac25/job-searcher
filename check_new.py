@@ -66,6 +66,26 @@ def get_existing_urls():
     return set(re.findall(r'\((https?://[^)]+)\)', content))
 
 
+def normalize_title(title):
+    """Normalize a vacancy title for near-duplicate detection.
+    Lowercases, strips punctuation, collapses whitespace.
+    Example: "Senior BI Engineer (XTB) — Remote" → "senior bi engineer xtb remote"
+    """
+    t = title.lower().strip()
+    t = re.sub(r'[^\w\s]', ' ', t)
+    t = ' '.join(t.split())
+    return t
+
+
+def get_existing_normalized_titles():
+    """Return a set of normalized titles already present in vacancies.md."""
+    if not os.path.exists(MD_FILE):
+        return set()
+    with open(MD_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+    return {normalize_title(m.group(1)) for m in re.finditer(r'^\- \[(.+?)\]', content, re.MULTILINE)}
+
+
 def is_relevant(title):
     """Check if vacancy title is relevant based on positive/negative keywords.
 
@@ -499,6 +519,13 @@ def add_vacancy_to_md(section_name, title, url):
         log(f"    Skipping duplicate URL: {url}")
         return
 
+    # Title-based deduplication: skip if a vacancy with the same normalized title already exists
+    norm_new = normalize_title(title)
+    for m in re.finditer(r'^\- \[(.+?)\]', content, re.MULTILINE):
+        if normalize_title(m.group(1)) == norm_new:
+            log(f"    Skipping near-duplicate title: {title}")
+            return
+
     lines = content.split("\n")
     lines = [l + "\n" for l in lines]
     if lines:
@@ -610,16 +637,19 @@ def main():
         except Exception as e:
             log(f"  ERROR in checker for {source_key}: {e}")
 
-    # Deduplicate by URL and normalized title
+    # Deduplicate by URL and normalized title (within this run AND against existing MD file)
+    existing_norm_titles = get_existing_normalized_titles()
     seen_urls = set()
     seen_titles = set()
     unique = []
     for v in all_new:
-        title_key = v["title"].lower()
-        if v["url"] not in seen_urls and title_key not in seen_titles:
+        norm_key = normalize_title(v["title"])
+        if v["url"] not in seen_urls and norm_key not in seen_titles and norm_key not in existing_norm_titles:
             seen_urls.add(v["url"])
-            seen_titles.add(title_key)
+            seen_titles.add(norm_key)
             unique.append(v)
+        elif norm_key in existing_norm_titles:
+            log(f"  Skipping (title already in MD): {v['title']}")
     all_new = unique
 
     if not all_new:
