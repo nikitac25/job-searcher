@@ -81,6 +81,15 @@
 </header>
 
 <article>
+  <h2>2026-04-26 03:10</h2>
+  <h3>Гістограма розподілу оцінок: заміна 3-сегментної смуги на 10-стовпчастий бар-чарт</h3>
+  <p><strong>Проблема/Можливість:</strong> Панель Stats відображала «Розподіл оцінок» у вигляді єдиної горизонтальної смуги з трьома сегментами: Hot (≥6) / OK (4–5) / Low (&lt;4) / N/A. Це давало надто грубе уявлення — наприклад, неможливо було розрізнити між «багато вакансій зі score 4» та «багато вакансій зі score 7». При невеликій кількості вакансій (10–20) точна гістограма набагато інформативніша, ніж 3-відровий бар.</p>
+  <p><strong>Рішення:</strong> 1) Додано CSS-класи <code>.score-hist</code>, <code>.score-hist-col</code>, <code>.score-hist-count</code>, <code>.score-hist-bar</code>, <code>.score-hist-num</code> — flex-контейнер з 10 вертикальними стовпчиками висотою 72px. Кожен стовпчик: кількість зверху → бар → мітка оцінки знизу. Hover-ефект на <code>.score-hist-bar</code> зменшує прозорість до 0.75. 2) У <code>renderStats()</code> додано блок обчислення <code>scoreCounts[1..10]</code> — перебирає всі вакансії та рахує кількість по кожному бальному значенню. Висота кожного стовпчика масштабується пропорційно до максимального значення (BAR_MAX_H = 48px). Кольори: 8–10 → <code>var(--green-bright)</code>, 6–7 → <code>var(--green)</code>, 4–5 → <code>var(--yellow)</code>, 1–3 → <code>var(--red)</code>. Порожній бар (count=0) відображається як тонка лінія з opacity 0.12. 3) Легенда під гістограмою оновлена: тепер відображає <strong>Hot 8–10: N</strong>, <strong>OK 4–7: N</strong>, <strong>Low 1–3: N</strong>, <strong>N/A: N</strong> — чіткіше ніж просто Hot/OK/Low.</p>
+  <p class="files-changed"><strong>Змінені файли:</strong> index.html</p>
+  <p class="verification"><strong>Перевірка:</strong> <code>venv/bin/python3 -c "import app; print('OK')"</code> — без помилок. <code>grep score-hist</code> підтверджує наявність CSS та JS-коду. Старі <code>score-bar-seg</code>-елементи більше не рендеряться (клас залишився тільки у CSS для зворотної сумісності). <code>scoreCounts</code>, <code>maxHistCount</code>, <code>BAR_MAX_H</code>, <code>histHtml</code> — всі ідентифікатори присутні у файлі.</p>
+</article>
+
+<article>
   <h2>2026-04-25 03:10</h2>
   <h3>Дедуплікація вакансій за нормалізованим заголовком (крос-раново)</h3>
   <p><strong>Проблема/Можливість:</strong> Існуюча дедуплікація у <code>check_new.py</code> порівнювала лише URL-адреси проти вже збережених у <code>vacancies.md</code>. Коли компанія перепублікує ту ж вакансію з іншим URL (NoFluffJobs додає суфікси <code>-1</code>, <code>-2</code> тощо для повторних постів), новий URL не збігається зі старим — і вакансія потрапляє до списку знову. Це вже сталося: у <code>vacancies.md</code> з'явилися два записи «Microstrategy Bi Developer Antal Remote» — з URL <code>antal-remote-2</code> (09.04) і <code>antal-remote-1</code> (13.04). На кожну таку дублікацію витрачається виклик Groq API та місце у списку.</p>

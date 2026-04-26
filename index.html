@@ -544,6 +544,41 @@
     margin-right: 3px;
     vertical-align: middle;
   }
+  /* Score histogram */
+  .score-hist {
+    display: flex;
+    gap: 4px;
+    height: 72px;
+    margin-top: 8px;
+  }
+  .score-hist-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0;
+    cursor: default;
+  }
+  .score-hist-count {
+    font-size: 8px;
+    color: var(--muted);
+    line-height: 11px;
+    min-height: 11px;
+    transition: color .15s;
+  }
+  .score-hist-bar {
+    width: 100%;
+    border-radius: 2px 2px 0 0;
+    transition: opacity .15s;
+  }
+  .score-hist-col:hover .score-hist-bar { opacity: 0.75; }
+  .score-hist-num {
+    font-size: 8px;
+    color: var(--muted-deep);
+    line-height: 13px;
+    margin-top: 1px;
+  }
   .sources-list {
     display: flex;
     flex-wrap: wrap;
@@ -1808,6 +1843,32 @@ function renderStats() {
   const pct = (n) => total ? (n / total * 100).toFixed(0) : 0;
   const pipelineTotal = pipeline.Applied + pipeline.Interview + pipeline.Offer + pipeline.Rejected;
 
+  // Per-score histogram (1–10)
+  const scoreCounts = {};
+  for (let i = 1; i <= 10; i++) scoreCounts[i] = 0;
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      if (v.score !== null && v.score >= 1 && v.score <= 10) {
+        scoreCounts[Math.round(v.score)]++;
+      }
+    }
+  }
+  const maxHistCount = Math.max(1, ...Object.values(scoreCounts));
+  const BAR_MAX_H = 48; // px  (72 total height - 11 count label - 13 num label)
+  const histHtml = Array.from({length: 10}, (_, i) => {
+    const sc = i + 1;
+    const count = scoreCounts[sc];
+    const h = count ? Math.max(3, Math.round(count / maxHistCount * BAR_MAX_H)) : 2;
+    const color = sc >= 8 ? 'var(--green-bright)' : sc >= 6 ? 'var(--green)' : sc >= 4 ? 'var(--yellow)' : 'var(--red)';
+    const opacity = count ? 1 : 0.12;
+    return `<div class="score-hist-col" title="${sc}/10 — ${count} вак.">
+      <span class="score-hist-count">${count || ''}</span>
+      <div class="score-hist-bar" style="height:${h}px;background:${color};opacity:${opacity}"></div>
+      <span class="score-hist-num">${sc}</span>
+    </div>`;
+  }).join('');
+
   let sourcesHtml = '';
   for (const [name, data] of Object.entries(sources).sort((a,b) => b[1].count - a[1].count)) {
     const srcAvg = data.scored ? (data.sum / data.scored).toFixed(1) : null;
@@ -1850,18 +1911,13 @@ function renderStats() {
         </div>
       </div>
       <div class="stat-card wide">
-        <div class="stat-label">Розподіл оцінок</div>
-        <div class="score-bar">
-          <div class="score-bar-seg" style="width:${pct(high)}%;background:var(--green)"></div>
-          <div class="score-bar-seg" style="width:${pct(mid)}%;background:var(--yellow)"></div>
-          <div class="score-bar-seg" style="width:${pct(low)}%;background:var(--red)"></div>
-          <div class="score-bar-seg" style="width:${pct(none)}%;background:var(--border)"></div>
-        </div>
+        <div class="stat-label">Розподіл оцінок (1–10)</div>
+        <div class="score-hist">${histHtml}</div>
         <div class="score-bar-legend">
-          <span><span class="legend-dot" style="background:var(--green)"></span>Hot ${high}</span>
-          <span><span class="legend-dot" style="background:var(--yellow)"></span>OK ${mid}</span>
-          <span><span class="legend-dot" style="background:var(--red)"></span>Low ${low}</span>
-          <span><span class="legend-dot" style="background:var(--border)"></span>N/A ${none}</span>
+          <span><span class="legend-dot" style="background:var(--green-bright)"></span>Hot 8–10: ${scoreCounts[8]+scoreCounts[9]+scoreCounts[10]}</span>
+          <span><span class="legend-dot" style="background:var(--yellow)"></span>OK 4–7: ${scoreCounts[4]+scoreCounts[5]+scoreCounts[6]+scoreCounts[7]}</span>
+          <span><span class="legend-dot" style="background:var(--red)"></span>Low 1–3: ${scoreCounts[1]+scoreCounts[2]+scoreCounts[3]}</span>
+          <span><span class="legend-dot" style="background:rgba(255,255,255,0.08)"></span>N/A: ${none}</span>
         </div>
       </div>
       <div class="stat-card wide">
