@@ -558,8 +558,12 @@
     align-items: center;
     justify-content: flex-end;
     gap: 0;
-    cursor: default;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background .15s;
   }
+  .score-hist-col:hover { background: rgba(255,255,255,0.04); }
+  .score-hist-col.hist-active { background: rgba(255,255,255,0.07); }
   .score-hist-count {
     font-size: 8px;
     color: var(--muted);
@@ -567,18 +571,31 @@
     min-height: 11px;
     transition: color .15s;
   }
+  .score-hist-col.hist-active .score-hist-count { color: var(--text); font-weight: 590; }
   .score-hist-bar {
     width: 100%;
     border-radius: 2px 2px 0 0;
     transition: opacity .15s;
   }
   .score-hist-col:hover .score-hist-bar { opacity: 0.75; }
+  .score-hist-col.hist-active .score-hist-bar { opacity: 1 !important; }
   .score-hist-num {
     font-size: 8px;
     color: var(--muted-deep);
     line-height: 13px;
     margin-top: 1px;
   }
+  .score-hist-col.hist-active .score-hist-num { color: var(--text); font-weight: 590; }
+  .score-filter-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(94,106,210,.15); border: 1px solid rgba(113,112,255,.3);
+    color: var(--accent-bright); font-size: 11px; font-weight: 590;
+    padding: 2px 8px 2px 6px; border-radius: 9999px;
+    cursor: pointer; margin-left: 6px;
+    transition: background .15s;
+  }
+  .score-filter-badge:hover { background: rgba(94,106,210,.25); }
+  .score-filter-badge svg { width: 10px; height: 10px; }
   .sources-list {
     display: flex;
     flex-wrap: wrap;
@@ -942,6 +959,7 @@ let searchQuery = '';
 let openCards = new Set();
 let pageTitle = 'Вакансії';
 let hideStale = localStorage.getItem('hideStale') === '1';
+let activeScoreExact = null;  // score filter from histogram bar click
 let lastCheckTs = null;      // raw ISO datetime string of last check
 let lastCheckAdded = null;  // number added in last check (null = unknown)
 let lastCheckSources = {};  // {source_key: count}
@@ -1225,7 +1243,7 @@ function renderFilters() {
     `<button class="filter-btn ${statsVisible?'active':''}" onclick="toggleStats()">${IC.barChart} Stats</button>`;
 }
 
-function setFilter(f) { activeFilter = f; renderFilters(); render(); }
+function setFilter(f) { activeFilter = f; activeScoreExact = null; renderFilters(); render(); }
 
 function setSort(s) {
   activeSort = s;
@@ -1286,6 +1304,7 @@ function highlightText(text, query) {
 }
 
 function passFilter(v) {
+  if (activeScoreExact !== null && v.score !== activeScoreExact) return false;
   if (activeFilter === 'all') return true;
   if (activeFilter === 'fav') return isFav(v.url);
   if (activeFilter === 'new') return isNew(v.url);
@@ -1537,9 +1556,10 @@ function render() {
   // Restore max-height for open cards after DOM rebuild
   document.querySelectorAll('.card.open .card-panel').forEach(p => { p.style.maxHeight = 'none'; });
   const totalAll = allData.reduce((acc, s) => SKIP.includes(s.name) ? acc : acc + s.items.length, 0);
-  const isFiltered = activeFilter !== 'all' || !!searchQuery;
+  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null;
+  const scorePart = activeScoreExact !== null ? ` · Score ${activeScoreExact}/10` : '';
   document.getElementById('meta').textContent = isFiltered
-    ? `Показано: ${total} з ${totalAll} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
+    ? `Показано: ${total} з ${totalAll}${scorePart} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
     : `Всього: ${total} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
   updateBulkDeleteBtn();
 }
@@ -1812,6 +1832,23 @@ function toggleStats() {
   if (statsVisible) renderStats();
 }
 
+function setScoreFilter(score) {
+  // Toggle: clicking the same bar again clears the filter
+  if (activeScoreExact === score) {
+    activeScoreExact = null;
+  } else {
+    activeScoreExact = score;
+    // Open stats panel if not already visible
+    if (!statsVisible) {
+      statsVisible = true;
+      document.getElementById('statsPanel').style.display = '';
+      renderFilters();
+    }
+  }
+  render();
+  if (statsVisible) renderStats();
+}
+
 function renderStats() {
   let total = 0, scored = 0, sumScore = 0, favCount = 0, noteCount = 0;
   let high = 0, mid = 0, low = 0, none = 0;
@@ -1862,9 +1899,11 @@ function renderStats() {
     const h = count ? Math.max(3, Math.round(count / maxHistCount * BAR_MAX_H)) : 2;
     const color = sc >= 8 ? 'var(--green-bright)' : sc >= 6 ? 'var(--green)' : sc >= 4 ? 'var(--yellow)' : 'var(--red)';
     const opacity = count ? 1 : 0.12;
-    return `<div class="score-hist-col" title="${sc}/10 — ${count} вак.">
+    const isActive = activeScoreExact === sc;
+    const barShadow = isActive ? `;box-shadow:0 0 8px ${color}` : '';
+    return `<div class="score-hist-col${isActive ? ' hist-active' : ''}" title="${sc}/10 — ${count} вак. (клік для фільтру)" onclick="setScoreFilter(${sc})">
       <span class="score-hist-count">${count || ''}</span>
-      <div class="score-hist-bar" style="height:${h}px;background:${color};opacity:${opacity}"></div>
+      <div class="score-hist-bar" style="height:${h}px;background:${color};opacity:${opacity}${barShadow}"></div>
       <span class="score-hist-num">${sc}</span>
     </div>`;
   }).join('');
@@ -1911,7 +1950,10 @@ function renderStats() {
         </div>
       </div>
       <div class="stat-card wide">
-        <div class="stat-label">Розподіл оцінок (1–10)</div>
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Розподіл оцінок (1–10)</span>
+          ${activeScoreExact !== null ? `<span class="score-filter-badge" onclick="setScoreFilter(${activeScoreExact})" title="Скинути фільтр за балом"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Score ${activeScoreExact}/10</span>` : `<span style="font-size:10px;color:var(--muted-deep)">клік → фільтр</span>`}
+        </div>
         <div class="score-hist">${histHtml}</div>
         <div class="score-bar-legend">
           <span><span class="legend-dot" style="background:var(--green-bright)"></span>Hot 8–10: ${scoreCounts[8]+scoreCounts[9]+scoreCounts[10]}</span>
