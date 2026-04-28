@@ -1428,7 +1428,7 @@ function renderKanban() {
         const sc = v.score !== null ? v.score + '/10' : '?';
         const isOpen = openCards.has(v.url);
         html += `
-        <div class="card ${isOpen ? 'open' : ''}${isStale(v) ? ' stale' : ''}" data-url="${escA(v.url)}">
+        <div class="card ${isOpen ? 'open' : ''}${isStale(v) ? ' stale' : ''}" data-url="${escA(v.url)}" data-title="${escA(v.title)}">
           <div class="card-header" onclick="toggle(this)">
             <div class="chevron">${IC.chevDown}</div>
             <div class="score-badge ${scoreClass(v.score)}">${sc}</div>
@@ -1454,8 +1454,8 @@ function renderKanban() {
           <div class="card-panel">
             <div class="panel-inner">
               ${v.summary
-                ? `<div class="panel-label">Аналіз</div><div class="panel-text">${esc(v.summary)}</div>`
-                : '<div class="panel-no-analysis">Аналіз ще не проведено</div>'
+                ? `<div class="panel-label" style="display:flex;justify-content:space-between;align-items:center">Аналіз <button class="note-edit-btn reanalyze-btn" onclick="event.stopPropagation();reanalyze('${escA(v.url)}')" title="Перерахувати бал через Groq AI">↺ Оновити</button></div><div class="panel-text">${esc(v.summary)}</div>`
+                : `<div class="panel-no-analysis" style="display:flex;justify-content:space-between;align-items:center"><span>Аналіз ще не проведено</span><button class="note-edit-btn reanalyze-btn" onclick="event.stopPropagation();reanalyze('${escA(v.url)}')" title="Запустити аналіз через Groq AI">↺ Аналізувати</button></div>`
               }
               <div class="note-area">
                 <div class="note-label">Нотатка <button class="note-edit-btn" onclick="event.stopPropagation(); startEditNote('${escA(v.url)}')">${hasNote(v.url) ? 'Редагувати' : 'Додати'}</button></div>
@@ -1507,7 +1507,7 @@ function render() {
       const isOpen = openCards.has(v.url);
 
       html += `
-      <div class="card ${isOpen ? 'open' : ''}${isStale(v) ? ' stale' : ''}" data-url="${escA(v.url)}">
+      <div class="card ${isOpen ? 'open' : ''}${isStale(v) ? ' stale' : ''}" data-url="${escA(v.url)}" data-title="${escA(v.title)}">
         <div class="card-header" onclick="toggle(this)">
           <div class="chevron">${IC.chevDown}</div>
           <div class="score-badge ${scoreClass(v.score)}">${sc}</div>
@@ -1537,8 +1537,8 @@ function render() {
         <div class="card-panel">
           <div class="panel-inner">
             ${v.summary
-              ? `<div class="panel-label">Аналіз</div><div class="panel-text">${searchQuery ? highlightText(v.summary, searchQuery) : esc(v.summary)}</div>`
-              : '<div class="panel-no-analysis">Аналіз ще не проведено</div>'
+              ? `<div class="panel-label" style="display:flex;justify-content:space-between;align-items:center">Аналіз <button class="note-edit-btn reanalyze-btn" onclick="event.stopPropagation();reanalyze('${escA(v.url)}')" title="Перерахувати бал через Groq AI">↺ Оновити</button></div><div class="panel-text">${searchQuery ? highlightText(v.summary, searchQuery) : esc(v.summary)}</div>`
+              : `<div class="panel-no-analysis" style="display:flex;justify-content:space-between;align-items:center"><span>Аналіз ще не проведено</span><button class="note-edit-btn reanalyze-btn" onclick="event.stopPropagation();reanalyze('${escA(v.url)}')" title="Запустити аналіз через Groq AI">↺ Аналізувати</button></div>`
             }
             <div class="note-area">
               <div class="note-label">Нотатка <button class="note-edit-btn" onclick="event.stopPropagation(); startEditNote('${escA(v.url)}')">${hasNote(v.url) ? 'Редагувати' : 'Додати'}</button></div>
@@ -2133,6 +2133,61 @@ document.addEventListener('keydown', (e) => {
       break;
   }
 });
+
+// Re-analyze a single vacancy via Groq API
+async function reanalyze(url) {
+  const card = document.querySelector('.card[data-url="' + CSS.escape(url) + '"]')
+    || [...document.querySelectorAll('.card')].find(c => c.dataset.url === url);
+  if (!card) return;
+  const title = card.dataset.title || '';
+  const btn = card.querySelector('.reanalyze-btn');
+
+  // Show loading state
+  const origText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '⟳ Аналізуємо...'; }
+
+  try {
+    const r = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, title })
+    });
+    const data = await r.json();
+    if (data.ok && data.analysis) {
+      // Update allData in-place so render reflects new score/summary
+      for (const section of allData) {
+        for (const v of section.items) {
+          if (v.url === url) {
+            const a = data.analysis;
+            if (a.score !== undefined) v.score = a.score;
+            if (a.summary) v.summary = a.summary;
+            if (a.type) v.type = a.type;
+            if (a.salary) v.salary = a.salary;
+            if (a.remote) v.remote = a.remote;
+            if (a.published) v.published = a.published;
+            if (a.status) v.status = a.status;
+            break;
+          }
+        }
+      }
+      renderFilters();
+      render();
+      if (statsVisible) renderStats();
+    } else {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '✗ Помилка';
+        setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = origText; } }, 3000);
+      }
+    }
+  } catch (e) {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '✗ Помилка';
+      setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = origText; } }, 3000);
+    }
+  }
+}
 
 function exportCSV() {
   const statuses = getStatuses();

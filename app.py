@@ -232,5 +232,19 @@ def api_check_status():
     return jsonify({"running": _check_running})
 
 
+@app.route("/api/analyze", methods=["POST"])
+def api_reanalyze():
+    """Re-analyze a specific vacancy with Groq API and save the result."""
+    data = request.json or {}
+    url = data.get("url", "")
+    title = data.get("title", "")
+    if not url or not title:
+        return jsonify({"ok": False, "error": "url and title required"}), 400
+    result = analyze_vacancy(title, url)
+    if result:
+        return jsonify({"ok": True, "analysis": result})
+    return jsonify({"ok": False, "error": "analysis failed or Groq key not configured"}), 500
+
+
 if __name__ == "__main__":
     app.run(host=WEB_HOST, port=WEB_PORT)
