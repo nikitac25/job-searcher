@@ -908,6 +908,7 @@
   <button class="action-btn" id="expandCollapseBtn" onclick="toggleExpandAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg> Розгорнути всі</button>
   <button class="action-btn" onclick="exportCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Експорт CSV</button>
   <button class="action-btn" id="hideStaleBtn" onclick="toggleHideStale()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> Сховати застарілі</button>
+  <button class="action-btn" id="remoteFilterBtn" onclick="toggleRemoteFilter()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> Тільки Remote</button>
   <button class="action-btn hidden" id="bulkDelBtn" onclick="bulkDelete()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Видалити видимі</button>
 </div>
 <div id="app"></div>
@@ -959,6 +960,7 @@ let searchQuery = '';
 let openCards = new Set();
 let pageTitle = 'Вакансії';
 let hideStale = localStorage.getItem('hideStale') === '1';
+let filterRemote = localStorage.getItem('filterRemote') === '1';  // show only remote-friendly vacancies
 let activeScoreExact = null;  // score filter from histogram bar click
 let lastCheckTs = null;      // raw ISO datetime string of last check
 let lastCheckAdded = null;  // number added in last check (null = unknown)
@@ -1139,6 +1141,7 @@ async function load() {
     render();
     updateMarkAllSeenBtn();
     updateHideStaleBtn();
+    updateRemoteFilterBtn();
     updateBulkDeleteBtn();
     updateTabTitle();
     if (statsVisible) renderStats();
@@ -1170,6 +1173,7 @@ async function poll() {
         render();
         updateMarkAllSeenBtn();
         updateHideStaleBtn();
+        updateRemoteFilterBtn();
         updateTabTitle();
         if (statsVisible) renderStats();
       }
@@ -1199,6 +1203,7 @@ function applyPendingData() {
     render();
     updateMarkAllSeenBtn();
     updateHideStaleBtn();
+    updateRemoteFilterBtn();
     updateTabTitle();
     if (statsVisible) renderStats();
   }
@@ -1304,6 +1309,7 @@ function highlightText(text, query) {
 }
 
 function passFilter(v) {
+  if (filterRemote && !isRemoteFriendly(v)) return false;
   if (activeScoreExact !== null && v.score !== activeScoreExact) return false;
   if (activeFilter === 'all') return true;
   if (activeFilter === 'fav') return isFav(v.url);
@@ -1369,6 +1375,12 @@ function ageClass(days) {
 }
 
 function isStale(v) { return getAgeDays(v) > 14; }
+
+function isRemoteFriendly(v) {
+  const r = (v.remote || '').toLowerCase();
+  return r.includes('remote') || r.includes('дистанц') || r.includes('віддален') ||
+         r.includes('ремот') || r.includes('здаль');
+}
 
 function getDateTag(v) {
   const d = v.published || v.date;
@@ -1822,6 +1834,31 @@ function updateHideStaleBtn() {
   } else {
     btn.innerHTML = eyeOpen + ' Сховати застарілі';
   }
+}
+
+function toggleRemoteFilter() {
+  filterRemote = !filterRemote;
+  localStorage.setItem('filterRemote', filterRemote ? '1' : '0');
+  updateRemoteFilterBtn();
+  renderFilters();
+  render();
+  if (statsVisible) renderStats();
+}
+
+const _globeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>';
+
+function updateRemoteFilterBtn() {
+  const btn = document.getElementById('remoteFilterBtn');
+  if (!btn) return;
+  let remoteCount = 0;
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) if (isRemoteFriendly(v)) remoteCount++;
+  }
+  btn.classList.toggle('toggled', filterRemote);
+  btn.innerHTML = filterRemote
+    ? `${_globeIcon} Remote (${remoteCount})`
+    : `${_globeIcon} Тільки Remote`;
 }
 
 let statsVisible = false;
@@ -2377,6 +2414,8 @@ document.addEventListener('visibilitychange', () => {
 if (activeView === 'list') setView('list');
 // Restore hide-stale toggle state
 if (hideStale) document.getElementById('hideStaleBtn').classList.add('toggled');
+// Restore remote filter toggle state
+if (filterRemote) document.getElementById('remoteFilterBtn').classList.add('toggled');
 
 // Sticky controls: add shadow when page is scrolled past the header
 (function() {
