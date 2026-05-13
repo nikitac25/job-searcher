@@ -688,6 +688,8 @@
   }
   #checkNowIcon.spinning { animation: spin 1s linear infinite; }
   #checkNowBtn.checking { opacity: .7; pointer-events: none; }
+  #analyzeBatchIcon.spinning { animation: spin 1s linear infinite; }
+  #analyzeBatchBtn.analyzing { opacity: .7; pointer-events: none; }
 
   /* View toggle */
   .view-toggle {
@@ -910,6 +912,7 @@
   <button class="action-btn" id="hideStaleBtn" onclick="toggleHideStale()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> Сховати застарілі</button>
   <button class="action-btn" id="remoteFilterBtn" onclick="toggleRemoteFilter()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> Тільки Remote</button>
   <button class="action-btn hidden" id="bulkDelBtn" onclick="bulkDelete()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Видалити видимі</button>
+  <button class="action-btn hidden" id="analyzeBatchBtn" onclick="triggerAnalyzeBatch()"><svg id="analyzeBatchIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/></svg> Аналізувати незаналізовані</button>
 </div>
 <div id="app"></div>
 
@@ -1143,6 +1146,7 @@ async function load() {
     updateHideStaleBtn();
     updateRemoteFilterBtn();
     updateBulkDeleteBtn();
+    updateAnalyzeBatchBtn();
     updateTabTitle();
     if (statsVisible) renderStats();
     status('ok');
@@ -1174,6 +1178,7 @@ async function poll() {
         updateMarkAllSeenBtn();
         updateHideStaleBtn();
         updateRemoteFilterBtn();
+        updateAnalyzeBatchBtn();
         updateTabTitle();
         if (statsVisible) renderStats();
       }
@@ -1204,6 +1209,7 @@ function applyPendingData() {
     updateMarkAllSeenBtn();
     updateHideStaleBtn();
     updateRemoteFilterBtn();
+    updateAnalyzeBatchBtn();
     updateTabTitle();
     if (statsVisible) renderStats();
   }
@@ -2392,6 +2398,76 @@ async function triggerCheck() {
       b.innerHTML = ic.outerHTML + ' Перевірити зараз';
     }
   }, 300000);
+}
+
+// "Analyze unanalyzed" batch trigger
+let _analyzeBatchPollTimer = null;
+
+function _countUnanalyzed() {
+  let count = 0;
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      if (v.score === null && !v.summary) count++;
+    }
+  }
+  return count;
+}
+
+function updateAnalyzeBatchBtn() {
+  const btn = document.getElementById('analyzeBatchBtn');
+  if (!btn) return;
+  const count = _countUnanalyzed();
+  btn.classList.toggle('hidden', count === 0);
+  if (count > 0 && !btn.classList.contains('analyzing')) {
+    const icon = document.getElementById('analyzeBatchIcon');
+    btn.innerHTML = (icon ? icon.outerHTML : '') + ` Аналізувати (${count})`;
+  }
+}
+
+async function triggerAnalyzeBatch() {
+  const btn = document.getElementById('analyzeBatchBtn');
+  const icon = document.getElementById('analyzeBatchIcon');
+  btn.classList.add('analyzing');
+  icon.classList.add('spinning');
+  btn.innerHTML = icon.outerHTML + ' Аналізуємо...';
+
+  try {
+    await fetch('/api/analyze-batch', { method: 'POST' });
+  } catch(e) {}
+
+  clearInterval(_analyzeBatchPollTimer);
+  _analyzeBatchPollTimer = setInterval(async () => {
+    try {
+      const r = await fetch('/api/analyze-batch/status');
+      const s = await r.json();
+      if (!s.running) {
+        clearInterval(_analyzeBatchPollTimer);
+        _analyzeBatchPollTimer = null;
+        await load();
+        await loadStatus();
+        const b = document.getElementById('analyzeBatchBtn');
+        const ic = document.getElementById('analyzeBatchIcon');
+        if (b && ic) {
+          b.classList.remove('analyzing');
+          ic.classList.remove('spinning');
+          updateAnalyzeBatchBtn();
+        }
+      }
+    } catch(e) {}
+  }, 4000);
+
+  // Safety fallback: restore after 10 min
+  setTimeout(() => {
+    clearInterval(_analyzeBatchPollTimer);
+    const b = document.getElementById('analyzeBatchBtn');
+    const ic = document.getElementById('analyzeBatchIcon');
+    if (b && ic) {
+      b.classList.remove('analyzing');
+      ic.classList.remove('spinning');
+      updateAnalyzeBatchBtn();
+    }
+  }, 600000);
 }
 
 load();

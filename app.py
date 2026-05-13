@@ -196,6 +196,7 @@ def api_delete():
 
 
 _check_running = False
+_analyze_running = False
 
 
 @app.route("/api/check", methods=["POST"])
@@ -224,6 +225,40 @@ def api_check():
 
     threading.Thread(target=run, daemon=True).start()
     return jsonify({"ok": True, "msg": "started"})
+
+
+@app.route("/api/analyze-batch", methods=["POST"])
+def api_analyze_batch():
+    """Trigger analyze_new.py in a background thread to analyze vacancies missing scores."""
+    global _analyze_running
+    if _analyze_running:
+        return jsonify({"ok": True, "msg": "already running"})
+
+    import subprocess
+    import threading
+
+    def run():
+        global _analyze_running
+        _analyze_running = True
+        try:
+            subprocess.run(
+                [sys.executable, os.path.join(BASE_DIR, "analyze_new.py")],
+                capture_output=True,
+                timeout=600,
+            )
+        except Exception:
+            pass
+        finally:
+            _analyze_running = False
+
+    threading.Thread(target=run, daemon=True).start()
+    return jsonify({"ok": True, "msg": "started"})
+
+
+@app.route("/api/analyze-batch/status", methods=["GET"])
+def api_analyze_batch_status():
+    """Return whether analyze_new.py is currently running."""
+    return jsonify({"running": _analyze_running})
 
 
 @app.route("/api/check/status", methods=["GET"])
