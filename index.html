@@ -982,6 +982,7 @@ let pageTitle = 'Вакансії';
 let hideStale = localStorage.getItem('hideStale') === '1';
 let filterRemote = localStorage.getItem('filterRemote') === '1';  // show only remote-friendly vacancies
 let activeScoreExact = null;  // score filter from histogram bar click
+let filterType = '';  // normalized company type filter ('Product', 'Outsource/Agency', etc.)
 let lastCheckTs = null;      // raw ISO datetime string of last check
 let lastCheckAdded = null;  // number added in last check (null = unknown)
 let lastCheckSources = {};  // {source_key: count}
@@ -1271,7 +1272,7 @@ function renderFilters() {
     `<button class="filter-btn ${statsVisible?'active':''}" onclick="toggleStats()">${IC.barChart} Stats</button>`;
 }
 
-function setFilter(f) { activeFilter = f; activeScoreExact = null; renderFilters(); render(); }
+function setFilter(f) { activeFilter = f; activeScoreExact = null; filterType = ''; renderFilters(); render(); }
 
 function setSort(s) {
   activeSort = s;
@@ -1281,6 +1282,12 @@ function setSort(s) {
 }
 
 function onSearch(q) { searchQuery = q.toLowerCase().trim(); render(); }
+
+function quickFilterType(type) {
+  filterType = filterType === type ? '' : type;
+  renderStats();
+  render();
+}
 
 function setView(mode) {
   activeView = mode;
@@ -1334,6 +1341,7 @@ function highlightText(text, query) {
 function passFilter(v) {
   if (filterRemote && !isRemoteFriendly(v)) return false;
   if (activeScoreExact !== null && v.score !== activeScoreExact) return false;
+  if (filterType) { const vt = normalizeType(v.type) || 'Не вказано'; if (vt !== filterType) return false; }
   if (activeFilter === 'all') return true;
   if (activeFilter === 'fav') return isFav(v.url);
   if (activeFilter === 'new') return isNew(v.url);
@@ -1398,6 +1406,22 @@ function ageClass(days) {
 }
 
 function isStale(v) { return getAgeDays(v) > 14; }
+
+function normalizeType(raw) {
+  if (!raw) return '';
+  const t = raw.toLowerCase().trim();
+  if (t.includes('не вказ')) return '';
+  if (t.includes('product') || t.includes('продукт') || t.includes('маркетплейс') || t.includes('стартап') || t.includes('startup') || t.includes('венчур')) return 'Product';
+  if (t.includes('фінтех') || t.includes('fintech')) return 'Fintech';
+  if (t.includes('gambling') || t.includes('crypto') || t.includes('крипт') || t.includes('гемблінг')) return 'Gambling/Crypto';
+  if (t.includes('аутсорс') || t.includes('outsource') || t.includes('агент') || t.includes('agency') || t.includes('consulting') || t.includes('консалт') || t.includes('service')) return 'Outsource/Agency';
+  if (t.includes('телеком')) return 'Telecom';
+  if (t.includes('фарм') || t.includes('медич') || t.includes('health')) return 'Healthcare';
+  if (t.includes('it') || t.includes('технолог') || t.includes('software') || t.includes('tech')) return 'IT';
+  if (t.includes('маркет') || t.includes('digital')) return 'Marketing/Media';
+  if (t.includes('розваж') || t.includes('entertainment') || t.includes('gaming') && !t.includes('gambling')) return 'Entertainment';
+  return raw;
+}
 
 function isRemoteFriendly(v) {
   const r = (v.remote || '').toLowerCase();
@@ -1552,7 +1576,7 @@ function render() {
           <div class="card-info">
             <a class="card-title" href="${escA(v.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${searchQuery ? highlightText(v.title, searchQuery) : esc(v.title)}</a>
             <div class="card-meta">
-              ${v.type ? `<span class="tag">${searchQuery ? highlightText(v.type, searchQuery) : esc(v.type)}</span>` : ''}
+              ${v.type ? (() => { const nt = normalizeType(v.type) || v.type; const display = searchQuery ? highlightText(nt, searchQuery) : esc(nt); return `<span class="tag" onclick="event.stopPropagation(); quickFilterType('${escA(nt)}')" style="cursor:pointer" title="${escA(v.type)}">${display}</span>`; })() : ''}
               ${v.remote ? `<span class="tag">${searchQuery ? highlightText(v.remote, searchQuery) : esc(v.remote)}</span>` : ''}
               ${v.salary && v.salary !== 'Не вказана' ? `<span class="tag tag-salary">${searchQuery ? highlightText(v.salary, searchQuery) : esc(v.salary)}</span>` : ''}
               ${getDateTag(v)}
@@ -1597,10 +1621,11 @@ function render() {
   // Restore max-height for open cards after DOM rebuild
   document.querySelectorAll('.card.open .card-panel').forEach(p => { p.style.maxHeight = 'none'; });
   const totalAll = allData.reduce((acc, s) => SKIP.includes(s.name) ? acc : acc + s.items.length, 0);
-  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null;
+  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null || !!filterType;
   const scorePart = activeScoreExact !== null ? ` · Score ${activeScoreExact}/10` : '';
+  const typePart2 = filterType ? ` · Тип: ${filterType}` : '';
   document.getElementById('meta').textContent = isFiltered
-    ? `Показано: ${total} з ${totalAll}${scorePart} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
+    ? `Показано: ${total} з ${totalAll}${scorePart}${typePart2} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
     : `Всього: ${total} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
   updateBulkDeleteBtn();
 }
@@ -1987,6 +2012,30 @@ function renderStats() {
     sourcesHtml += `<span class="source-chip">${esc(name)}<b>${data.count}</b>${avgBadge}</span>`;
   }
 
+  // Company type breakdown (normalized)
+  const typeMap = {};
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      const key = normalizeType(v.type) || 'Не вказано';
+      if (!typeMap[key]) typeMap[key] = { count: 0, sum: 0, scored: 0 };
+      typeMap[key].count++;
+      if (v.score !== null) { typeMap[key].sum += v.score; typeMap[key].scored++; }
+    }
+  }
+  let typesHtml = '';
+  for (const [type, data] of Object.entries(typeMap).sort((a,b) => b[1].count - a[1].count)) {
+    const tAvg = data.scored ? (data.sum / data.scored).toFixed(1) : null;
+    const tColor = tAvg === null ? 'var(--muted-deep)'
+      : tAvg >= 6 ? 'var(--green-bright)'
+      : tAvg >= 4 ? 'var(--yellow)'
+      : 'var(--red)';
+    const tBadge = tAvg !== null ? ` <span style="color:${tColor};font-size:10px;margin-left:2px" title="Середній бал">★${tAvg}</span>` : '';
+    const isActiveType = filterType === type;
+    const typeChipStyle = isActiveType ? 'cursor:pointer;background:rgba(94,106,210,.15);border-color:rgba(113,112,255,.3);color:var(--accent-bright)' : 'cursor:pointer';
+    typesHtml += `<span class="source-chip" onclick="quickFilterType('${escA(type)}')" style="${typeChipStyle}" title="Клік — фільтрувати за типом">${esc(type)}<b>${data.count}</b>${tBadge}</span>`;
+  }
+
   document.getElementById('statsPanel').innerHTML = `
     <div class="stats-panel">
       <div class="stat-card">
@@ -2032,6 +2081,13 @@ function renderStats() {
       <div class="stat-card wide">
         <div class="stat-label">Джерела</div>
         <div class="sources-list">${sourcesHtml}</div>
+      </div>
+      <div class="stat-card wide">
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Типи компаній</span>
+          ${filterType ? `<span class="score-filter-badge" onclick="quickFilterType('${escA(filterType)}')" title="Скинути фільтр"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ${esc(filterType)}</span>` : `<span style="font-size:10px;color:var(--muted-deep)">клік → фільтр</span>`}
+        </div>
+        <div class="sources-list">${typesHtml}</div>
       </div>
     </div>`;
 }
