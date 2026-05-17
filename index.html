@@ -935,6 +935,7 @@
   <button class="action-btn" onclick="exportCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Експорт CSV</button>
   <button class="action-btn" id="hideStaleBtn" onclick="toggleHideStale()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> Сховати застарілі</button>
   <button class="action-btn" id="remoteFilterBtn" onclick="toggleRemoteFilter()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> Тільки Remote</button>
+  <button class="action-btn" id="salaryFilterBtn" onclick="toggleSalaryFilter()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg> З зарплатою</button>
   <button class="action-btn hidden" id="bulkDelBtn" onclick="bulkDelete()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Видалити видимі</button>
   <button class="action-btn hidden" id="analyzeBatchBtn" onclick="triggerAnalyzeBatch()"><svg id="analyzeBatchIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/></svg> Аналізувати незаналізовані</button>
 </div>
@@ -988,6 +989,7 @@ let openCards = new Set();
 let pageTitle = 'Вакансії';
 let hideStale = localStorage.getItem('hideStale') === '1';
 let filterRemote = localStorage.getItem('filterRemote') === '1';  // show only remote-friendly vacancies
+let filterSalary = localStorage.getItem('filterSalary') === '1';  // show only vacancies with salary specified
 let activeScoreExact = null;  // score filter from histogram bar click
 let filterType = '';  // normalized company type filter ('Product', 'Outsource/Agency', etc.)
 let lastCheckTs = null;      // raw ISO datetime string of last check
@@ -1170,6 +1172,7 @@ async function load() {
     updateMarkAllSeenBtn();
     updateHideStaleBtn();
     updateRemoteFilterBtn();
+    updateSalaryFilterBtn();
     updateBulkDeleteBtn();
     updateAnalyzeBatchBtn();
     updateTabTitle();
@@ -1203,6 +1206,7 @@ async function poll() {
         updateMarkAllSeenBtn();
         updateHideStaleBtn();
         updateRemoteFilterBtn();
+        updateSalaryFilterBtn();
         updateAnalyzeBatchBtn();
         updateTabTitle();
         if (statsVisible) renderStats();
@@ -1234,6 +1238,7 @@ function applyPendingData() {
     updateMarkAllSeenBtn();
     updateHideStaleBtn();
     updateRemoteFilterBtn();
+    updateSalaryFilterBtn();
     updateAnalyzeBatchBtn();
     updateTabTitle();
     if (statsVisible) renderStats();
@@ -1347,6 +1352,7 @@ function highlightText(text, query) {
 
 function passFilter(v) {
   if (filterRemote && !isRemoteFriendly(v)) return false;
+  if (filterSalary && !isSalarySpecified(v)) return false;
   if (activeScoreExact !== null && v.score !== activeScoreExact) return false;
   if (filterType) { const vt = normalizeType(v.type) || 'Не вказано'; if (vt !== filterType) return false; }
   if (activeFilter === 'all') return true;
@@ -1442,6 +1448,11 @@ function isRemoteFriendly(v) {
   const r = (v.remote || '').toLowerCase();
   return r.includes('remote') || r.includes('дистанц') || r.includes('віддален') ||
          r.includes('ремот') || r.includes('здаль');
+}
+
+function isSalarySpecified(v) {
+  const s = (v.salary || '').trim();
+  return s && s !== 'Не вказана' && s !== 'Не вказано' && s !== 'Не вказано.';
 }
 
 function getDateTag(v) {
@@ -1636,11 +1647,12 @@ function render() {
   // Restore max-height for open cards after DOM rebuild
   document.querySelectorAll('.card.open .card-panel').forEach(p => { p.style.maxHeight = 'none'; });
   const totalAll = allData.reduce((acc, s) => SKIP.includes(s.name) ? acc : acc + s.items.length, 0);
-  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null || !!filterType;
+  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null || !!filterType || filterRemote || filterSalary;
   const scorePart = activeScoreExact !== null ? ` · Score ${activeScoreExact}/10` : '';
   const typePart2 = filterType ? ` · Тип: ${filterType}` : '';
+  const salaryPart = filterSalary ? ' · З зарплатою' : '';
   document.getElementById('meta').textContent = isFiltered
-    ? `Показано: ${total} з ${totalAll}${scorePart}${typePart2} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
+    ? `Показано: ${total} з ${totalAll}${scorePart}${typePart2}${salaryPart} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
     : `Всього: ${total} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
   updateBulkDeleteBtn();
 }
@@ -1928,6 +1940,31 @@ function updateRemoteFilterBtn() {
   btn.innerHTML = filterRemote
     ? `${_globeIcon} Remote (${remoteCount})`
     : `${_globeIcon} Тільки Remote`;
+}
+
+const _salaryIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>';
+
+function toggleSalaryFilter() {
+  filterSalary = !filterSalary;
+  localStorage.setItem('filterSalary', filterSalary ? '1' : '0');
+  updateSalaryFilterBtn();
+  renderFilters();
+  render();
+  if (statsVisible) renderStats();
+}
+
+function updateSalaryFilterBtn() {
+  const btn = document.getElementById('salaryFilterBtn');
+  if (!btn) return;
+  let salaryCount = 0;
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) if (isSalarySpecified(v)) salaryCount++;
+  }
+  btn.classList.toggle('toggled', filterSalary);
+  btn.innerHTML = filterSalary
+    ? `${_salaryIcon} З зарплатою (${salaryCount})`
+    : `${_salaryIcon} З зарплатою`;
 }
 
 let statsVisible = false;
@@ -2644,6 +2681,8 @@ if (activeView === 'list') setView('list');
 if (hideStale) document.getElementById('hideStaleBtn').classList.add('toggled');
 // Restore remote filter toggle state
 if (filterRemote) document.getElementById('remoteFilterBtn').classList.add('toggled');
+// Restore salary filter toggle state
+if (filterSalary) document.getElementById('salaryFilterBtn').classList.add('toggled');
 
 // Sticky controls: add shadow when page is scrolled past the header
 (function() {
