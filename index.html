@@ -993,6 +993,7 @@ let filterRemote = localStorage.getItem('filterRemote') === '1';  // show only r
 let filterSalary = localStorage.getItem('filterSalary') === '1';  // show only vacancies with salary specified
 let activeScoreExact = null;  // score filter from histogram bar click
 let filterType = '';  // normalized company type filter ('Product', 'Outsource/Agency', etc.)
+let filterSource = localStorage.getItem('filterSource') || '';  // source section filter ('Djinni', 'NoFluffJobs_bi', etc.)
 let lastCheckTs = null;      // raw ISO datetime string of last check
 let lastCheckAdded = null;  // number added in last check (null = unknown)
 let lastCheckSources = {};  // {source_key: count}
@@ -1254,6 +1255,7 @@ function renderFilters() {
   const notes = getNotes();
   for (const s of allData) {
     if (SKIP.includes(s.name)) continue;
+    if (filterSource && s.name !== filterSource) continue;
     for (const v of s.items) {
       scores.all++;
       if (isNew(v.url)) scores.new++;
@@ -1300,6 +1302,14 @@ function quickFilterType(type) {
   filterType = filterType === type ? '' : type;
   renderStats();
   render();
+}
+
+function quickFilterSource(src) {
+  filterSource = filterSource === src ? '' : src;
+  localStorage.setItem('filterSource', filterSource);
+  renderFilters();
+  render();
+  if (statsVisible) renderStats();
 }
 
 function setView(mode) {
@@ -1602,6 +1612,7 @@ function render() {
 
   for (const section of allData) {
     if (SKIP.includes(section.name)) continue;
+    if (filterSource && section.name !== filterSource) continue;
     const filtered = sortItems(section.items.filter(v => passFilter(v) && matchesSearch(v) && (!hideStale || !isStale(v))));
     if (!filtered.length) continue;
     total += filtered.length;
@@ -1674,12 +1685,13 @@ function render() {
   // Restore max-height for open cards after DOM rebuild
   document.querySelectorAll('.card.open .card-panel').forEach(p => { p.style.maxHeight = 'none'; });
   const totalAll = allData.reduce((acc, s) => SKIP.includes(s.name) ? acc : acc + s.items.length, 0);
-  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null || !!filterType || filterRemote || filterSalary;
+  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null || !!filterType || filterRemote || filterSalary || !!filterSource;
   const scorePart = activeScoreExact !== null ? ` · Score ${activeScoreExact}/10` : '';
   const typePart2 = filterType ? ` · Тип: ${filterType}` : '';
   const salaryPart = filterSalary ? ' · З зарплатою' : '';
+  const sourcePart = filterSource ? ` · Джерело: ${filterSource}` : '';
   document.getElementById('meta').textContent = isFiltered
-    ? `Показано: ${total} з ${totalAll}${scorePart}${typePart2}${salaryPart} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
+    ? `Показано: ${total} з ${totalAll}${scorePart}${typePart2}${salaryPart}${sourcePart} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
     : `Всього: ${total} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
   updateBulkDeleteBtn();
 }
@@ -2088,7 +2100,11 @@ function renderStats() {
     const avgBadge = srcAvg !== null
       ? ` <span style="color:${avgColor};font-size:10px;margin-left:2px" title="Середній бал">★${srcAvg}</span>`
       : '';
-    sourcesHtml += `<span class="source-chip">${esc(name)}<b>${data.count}</b>${avgBadge}</span>`;
+    const isActiveSrc = filterSource === name;
+    const srcChipStyle = isActiveSrc
+      ? 'cursor:pointer;background:rgba(94,106,210,.15);border-color:rgba(113,112,255,.3);color:var(--accent-bright)'
+      : 'cursor:pointer';
+    sourcesHtml += `<span class="source-chip" onclick="quickFilterSource('${escA(name)}')" style="${srcChipStyle}" title="Клік — фільтрувати за джерелом">${esc(name)}<b>${data.count}</b>${avgBadge}</span>`;
   }
 
   // Company type breakdown (normalized)
@@ -2158,7 +2174,10 @@ function renderStats() {
         </div>
       </div>
       <div class="stat-card wide">
-        <div class="stat-label">Джерела</div>
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Джерела</span>
+          ${filterSource ? `<span class="score-filter-badge" onclick="quickFilterSource('${escA(filterSource)}')" title="Скинути фільтр за джерелом"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ${esc(filterSource)}</span>` : `<span style="font-size:10px;color:var(--muted-deep)">клік → фільтр</span>`}
+        </div>
         <div class="sources-list">${sourcesHtml}</div>
       </div>
       <div class="stat-card wide">
