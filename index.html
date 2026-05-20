@@ -223,6 +223,9 @@
   .card.stale:hover { opacity: .85; }
   .tag-inactive { color: var(--red); border-color: rgba(255,71,87,.2); }
   .tag-salary { color: var(--green-bright); border-color: rgba(16,185,129,.25); }
+  .tag-remote-full { color: var(--green-bright); border-color: rgba(16,185,129,.25); }
+  .tag-remote-hybrid { color: var(--yellow); border-color: rgba(255,165,2,.2); }
+  .tag-remote-office { color: var(--muted-deep); border-color: rgba(255,255,255,.06); }
   .tag-new {
     color: var(--accent-bright); border-color: rgba(113,112,255,.3);
     font-weight: 590; animation: pulse 2s ease-in-out infinite;
@@ -1481,6 +1484,27 @@ function normalizeType(raw) {
   return raw;
 }
 
+function normalizeRemote(raw) {
+  const s = (raw || '').toLowerCase();
+  if (/hybrid|гібрид|комбін|частков/.test(s)) return 'Hybrid';
+  if (/remote|ремот|дистанц|віддален|здаль/.test(s)) return 'Remote';
+  if (/office|офіс|присутн|очно/.test(s)) return 'Office';
+  return raw;
+}
+
+function getRemoteTag(v) {
+  if (!v.remote) return '';
+  const norm = normalizeRemote(v.remote);
+  let cls = '';
+  if (norm === 'Remote') cls = 'tag-remote-full';
+  else if (norm === 'Hybrid') cls = 'tag-remote-hybrid';
+  else if (norm === 'Office') cls = 'tag-remote-office';
+  const display = searchQuery ? highlightText(norm, searchQuery) : esc(norm);
+  // Clicking a Remote tag activates the remote filter (if not already active)
+  const extra = norm === 'Remote' ? ` onclick="event.stopPropagation(); if(!filterRemote) toggleRemoteFilter()" style="cursor:pointer"` : '';
+  return `<span class="tag${cls ? ' ' + cls : ''}" title="${escA(v.remote)}"${extra}>${display}</span>`;
+}
+
 function isRemoteFriendly(v) {
   const r = (v.remote || '').toLowerCase();
   return r.includes('remote') || r.includes('дистанц') || r.includes('віддален') ||
@@ -1558,7 +1582,7 @@ function renderKanban() {
               <a class="card-title" href="${escA(v.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(v.title)}</a>
               <div class="card-meta">
                 ${v._section ? `<span class="tag" style="color:var(--muted-deep);border-color:rgba(255,255,255,.04)">${esc(v._section)}</span>` : ''}
-                ${v.remote ? `<span class="tag">${esc(v.remote)}</span>` : ''}
+                ${getRemoteTag(v)}
                 ${v.salary && v.salary !== 'Не вказана' ? `<span class="tag tag-salary">${esc(v.salary)}</span>` : ''}
                 ${getDateTag(v)}
                 ${isFav(v.url) ? '<span class="tag tag-fav">fav</span>' : ''}
@@ -1641,7 +1665,7 @@ function render() {
             <a class="card-title" href="${escA(v.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${searchQuery ? highlightText(v.title, searchQuery) : esc(v.title)}</a>
             <div class="card-meta">
               ${v.type ? (() => { const nt = normalizeType(v.type) || v.type; const display = searchQuery ? highlightText(nt, searchQuery) : esc(nt); return `<span class="tag" onclick="event.stopPropagation(); quickFilterType('${escA(nt)}')" style="cursor:pointer" title="${escA(v.type)}">${display}</span>`; })() : ''}
-              ${v.remote ? `<span class="tag">${searchQuery ? highlightText(v.remote, searchQuery) : esc(v.remote)}</span>` : ''}
+              ${getRemoteTag(v)}
               ${v.salary && v.salary !== 'Не вказана' ? `<span class="tag tag-salary">${searchQuery ? highlightText(v.salary, searchQuery) : esc(v.salary)}</span>` : ''}
               ${getDateTag(v)}
               ${v.status === 'inactive' ? '<span class="tag tag-inactive">inactive</span>' : ''}

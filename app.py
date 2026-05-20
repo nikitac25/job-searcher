@@ -275,6 +275,7 @@ def api_reanalyze():
     title = data.get("title", "")
     if not url or not title:
         return jsonify({"ok": False, "error": "url and title required"}), 400
+    from check_new import analyze_vacancy
     result = analyze_vacancy(title, url)
     if result:
         return jsonify({"ok": True, "analysis": result})
