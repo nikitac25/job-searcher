@@ -997,6 +997,7 @@ let filterSalary = localStorage.getItem('filterSalary') === '1';  // show only v
 let activeScoreExact = null;  // score filter from histogram bar click
 let filterType = '';  // normalized company type filter ('Product', 'Outsource/Agency', etc.)
 let filterSource = localStorage.getItem('filterSource') || '';  // source section filter ('Djinni', 'NoFluffJobs_bi', etc.)
+let filterWorkFormat = localStorage.getItem('filterWorkFormat') || '';  // work format filter ('Remote', 'Hybrid', 'Office')
 let lastCheckTs = null;      // raw ISO datetime string of last check
 let lastCheckAdded = null;  // number added in last check (null = unknown)
 let lastCheckSources = {};  // {source_key: count}
@@ -1260,6 +1261,7 @@ function renderFilters() {
     if (SKIP.includes(s.name)) continue;
     if (filterSource && s.name !== filterSource) continue;
     for (const v of s.items) {
+      if (filterWorkFormat && normalizeRemote(v.remote) !== filterWorkFormat) continue;
       scores.all++;
       if (isNew(v.url)) scores.new++;
       if (favs.has(v.url)) scores.fav++;
@@ -1310,6 +1312,14 @@ function quickFilterType(type) {
 function quickFilterSource(src) {
   filterSource = filterSource === src ? '' : src;
   localStorage.setItem('filterSource', filterSource);
+  renderFilters();
+  render();
+  if (statsVisible) renderStats();
+}
+
+function quickFilterWorkFormat(fmt) {
+  filterWorkFormat = filterWorkFormat === fmt ? '' : fmt;
+  localStorage.setItem('filterWorkFormat', filterWorkFormat);
   renderFilters();
   render();
   if (statsVisible) renderStats();
@@ -1393,6 +1403,7 @@ function highlightText(text, query) {
 function passFilter(v) {
   if (filterRemote && !isRemoteFriendly(v)) return false;
   if (filterSalary && !isSalarySpecified(v)) return false;
+  if (filterWorkFormat) { const nrf = normalizeRemote(v.remote); if (nrf !== filterWorkFormat) return false; }
   if (activeScoreExact !== null && v.score !== activeScoreExact) return false;
   if (filterType) { const vt = normalizeType(v.type) || 'Не вказано'; if (vt !== filterType) return false; }
   if (activeFilter === 'all') return true;
@@ -1709,13 +1720,14 @@ function render() {
   // Restore max-height for open cards after DOM rebuild
   document.querySelectorAll('.card.open .card-panel').forEach(p => { p.style.maxHeight = 'none'; });
   const totalAll = allData.reduce((acc, s) => SKIP.includes(s.name) ? acc : acc + s.items.length, 0);
-  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null || !!filterType || filterRemote || filterSalary || !!filterSource;
+  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null || !!filterType || filterRemote || filterSalary || !!filterSource || !!filterWorkFormat;
   const scorePart = activeScoreExact !== null ? ` · Score ${activeScoreExact}/10` : '';
   const typePart2 = filterType ? ` · Тип: ${filterType}` : '';
   const salaryPart = filterSalary ? ' · З зарплатою' : '';
   const sourcePart = filterSource ? ` · Джерело: ${filterSource}` : '';
+  const workFmtPart = filterWorkFormat ? ` · ${filterWorkFormat}` : '';
   document.getElementById('meta').textContent = isFiltered
-    ? `Показано: ${total} з ${totalAll}${scorePart}${typePart2}${salaryPart}${sourcePart} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
+    ? `Показано: ${total} з ${totalAll}${scorePart}${typePart2}${salaryPart}${sourcePart}${workFmtPart} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
     : `Всього: ${total} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
   updateBulkDeleteBtn();
 }
@@ -2155,6 +2167,47 @@ function renderStats() {
     typesHtml += `<span class="source-chip" onclick="quickFilterType('${escA(type)}')" style="${typeChipStyle}" title="Клік — фільтрувати за типом">${esc(type)}<b>${data.count}</b>${tBadge}</span>`;
   }
 
+  // Work format breakdown (Remote / Hybrid / Office)
+  const KNOWN_FORMATS = ['Remote', 'Hybrid', 'Office'];
+  const workFmtMap = {};
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      const key = normalizeRemote(v.remote) || 'Не вказано';
+      if (!workFmtMap[key]) workFmtMap[key] = { count: 0, sum: 0, scored: 0 };
+      workFmtMap[key].count++;
+      if (v.score !== null) { workFmtMap[key].sum += v.score; workFmtMap[key].scored++; }
+    }
+  }
+  // Sort: known formats first (Remote, Hybrid, Office), then others by count
+  const sortedFormats = Object.keys(workFmtMap).sort((a, b) => {
+    const ai = KNOWN_FORMATS.indexOf(a), bi = KNOWN_FORMATS.indexOf(b);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
+    return workFmtMap[b].count - workFmtMap[a].count;
+  });
+  let workFmtHtml = '';
+  for (const fmt of sortedFormats) {
+    const data = workFmtMap[fmt];
+    const fmtAvg = data.scored ? (data.sum / data.scored).toFixed(1) : null;
+    const fmtColor = fmtAvg === null ? 'var(--muted-deep)'
+      : fmtAvg >= 6 ? 'var(--green-bright)'
+      : fmtAvg >= 4 ? 'var(--yellow)'
+      : 'var(--red)';
+    const fmtBadge = fmtAvg !== null ? ` <span style="color:${fmtColor};font-size:10px;margin-left:2px" title="Середній бал">★${fmtAvg}</span>` : '';
+    const isActiveFmt = filterWorkFormat === fmt;
+    const fmtChipStyle = isActiveFmt
+      ? 'cursor:pointer;background:rgba(94,106,210,.15);border-color:rgba(113,112,255,.3);color:var(--accent-bright)'
+      : 'cursor:pointer';
+    const isClickable = KNOWN_FORMATS.includes(fmt);
+    if (isClickable) {
+      workFmtHtml += `<span class="source-chip" onclick="quickFilterWorkFormat('${escA(fmt)}')" style="${fmtChipStyle}" title="Клік — фільтрувати за форматом">${esc(fmt)}<b>${data.count}</b>${fmtBadge}</span>`;
+    } else {
+      workFmtHtml += `<span class="source-chip" style="opacity:.7">${esc(fmt)}<b>${data.count}</b>${fmtBadge}</span>`;
+    }
+  }
+
   document.getElementById('statsPanel').innerHTML = `
     <div class="stats-panel">
       <div class="stat-card">
@@ -2210,6 +2263,13 @@ function renderStats() {
           ${filterType ? `<span class="score-filter-badge" onclick="quickFilterType('${escA(filterType)}')" title="Скинути фільтр"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ${esc(filterType)}</span>` : `<span style="font-size:10px;color:var(--muted-deep)">клік → фільтр</span>`}
         </div>
         <div class="sources-list">${typesHtml}</div>
+      </div>
+      <div class="stat-card wide">
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Формат роботи</span>
+          ${filterWorkFormat ? `<span class="score-filter-badge" onclick="quickFilterWorkFormat('${escA(filterWorkFormat)}')" title="Скинути фільтр"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ${esc(filterWorkFormat)}</span>` : `<span style="font-size:10px;color:var(--muted-deep)">клік → фільтр</span>`}
+        </div>
+        <div class="sources-list">${workFmtHtml}</div>
       </div>
     </div>`;
 }
