@@ -902,6 +902,34 @@
   @media (min-width: 1440px) {
     .sticky-controls { margin-left: -48px; margin-right: -48px; padding: 0 48px; }
   }
+
+  /* Active filter chips bar */
+  .active-filters-bar {
+    display: none;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0 0 8px;
+    align-items: center;
+  }
+  .filter-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: rgba(94,106,210,.12); border: 1px solid rgba(113,112,255,.25);
+    color: var(--accent-bright); font-size: 12px; font-weight: 510;
+    padding: 2px 6px 2px 10px; border-radius: 9999px; cursor: pointer;
+    transition: background .15s; white-space: nowrap;
+    font-family: inherit;
+  }
+  .filter-chip:hover { background: rgba(94,106,210,.22); }
+  .filter-chip svg { width: 10px; height: 10px; opacity: .7; flex-shrink: 0; }
+  .filter-chip:hover svg { opacity: 1; }
+  .clear-all-btn {
+    background: none; border: none;
+    color: var(--muted); font-size: 12px; cursor: pointer;
+    padding: 2px 8px; border-radius: 9999px;
+    transition: color .15s; font-family: inherit;
+    white-space: nowrap;
+  }
+  .clear-all-btn:hover { color: var(--text); text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -930,6 +958,7 @@
   </div>
   <input class="search-box" type="text" id="searchBox" placeholder="Пошук (кілька слів = AND)..." oninput="onSearch(this.value)">
 </div>
+<div class="active-filters-bar" id="activeFiltersBar"></div>
 </div><!-- /sticky-controls -->
 <div id="statsPanel" style="display:none"></div>
 <div class="actions-row">
@@ -1290,6 +1319,7 @@ function renderFilters() {
     fb('notes','Notes',scores.notes) +
     fb('pipeline','Pipeline',pipelineCount) +
     `<button class="filter-btn ${statsVisible?'active':''}" onclick="toggleStats()">${IC.barChart} Stats</button>`;
+  renderActiveFiltersBar();
 }
 
 function setFilter(f) { activeFilter = f; activeScoreExact = null; filterType = ''; renderFilters(); render(); }
@@ -1301,12 +1331,13 @@ function setSort(s) {
   render();
 }
 
-function onSearch(q) { searchQuery = q.toLowerCase().trim(); render(); }
+function onSearch(q) { searchQuery = q.toLowerCase().trim(); render(); renderActiveFiltersBar(); }
 
 function quickFilterType(type) {
   filterType = filterType === type ? '' : type;
   renderStats();
   render();
+  renderActiveFiltersBar();
 }
 
 function quickFilterSource(src) {
@@ -2063,6 +2094,85 @@ function setScoreFilter(score) {
       renderFilters();
     }
   }
+  render();
+  if (statsVisible) renderStats();
+  renderActiveFiltersBar();
+}
+
+function renderActiveFiltersBar() {
+  const bar = document.getElementById('activeFiltersBar');
+  if (!bar) return;
+  const TAB_LABELS = {fav:'Fav', new:'New', hot:'Hot (≥6)', ok:'OK (4–5)', skip:'Skip (<4)', notes:'Notes'};
+  const chips = [];
+  if (activeFilter !== 'all' && activeFilter !== 'pipeline') {
+    chips.push({label: TAB_LABELS[activeFilter] || activeFilter, onclick: `setFilter('all')`});
+  }
+  if (activeScoreExact !== null) {
+    chips.push({label: `Score ${activeScoreExact}/10`, onclick: `setScoreFilter(${activeScoreExact})`});
+  }
+  if (filterType) {
+    chips.push({label: `Тип: ${filterType}`, onclick: `quickFilterType('${escA(filterType)}')`});
+  }
+  if (filterSource) {
+    chips.push({label: `Джерело: ${filterSource}`, onclick: `quickFilterSource('${escA(filterSource)}')`});
+  }
+  if (filterWorkFormat) {
+    chips.push({label: filterWorkFormat, onclick: `quickFilterWorkFormat('${escA(filterWorkFormat)}')`});
+  }
+  if (filterRemote) {
+    chips.push({label: 'Тільки Remote', onclick: 'toggleRemoteFilter()'});
+  }
+  if (filterSalary) {
+    chips.push({label: 'З зарплатою', onclick: 'toggleSalaryFilter()'});
+  }
+  if (hideStale) {
+    chips.push({label: 'Без застарілих', onclick: 'toggleHideStale()'});
+  }
+  if (searchQuery) {
+    const preview = searchQuery.length > 18 ? searchQuery.slice(0, 18) + '…' : searchQuery;
+    chips.push({label: `"${preview}"`, onclick: 'clearSearch()'});
+  }
+  if (!chips.length) {
+    bar.style.display = 'none';
+    return;
+  }
+  const xIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
+  bar.style.display = 'flex';
+  bar.innerHTML = chips.map(c =>
+    `<button class="filter-chip" onclick="${c.onclick}">${esc(c.label)} ${xIcon}</button>`
+  ).join('') +
+  (chips.length > 1 ? `<button class="clear-all-btn" onclick="clearAllFilters()">× Скинути всі</button>` : '');
+}
+
+function clearSearch() {
+  searchQuery = '';
+  const sb = document.getElementById('searchBox');
+  if (sb) sb.value = '';
+  render();
+  renderActiveFiltersBar();
+}
+
+function clearAllFilters() {
+  activeFilter = 'all';
+  activeScoreExact = null;
+  filterType = '';
+  filterSource = '';
+  filterWorkFormat = '';
+  filterRemote = false;
+  filterSalary = false;
+  hideStale = false;
+  searchQuery = '';
+  localStorage.setItem('filterSource', '');
+  localStorage.setItem('filterWorkFormat', '');
+  localStorage.setItem('filterRemote', '0');
+  localStorage.setItem('filterSalary', '0');
+  localStorage.setItem('hideStale', '0');
+  const sb = document.getElementById('searchBox');
+  if (sb) sb.value = '';
+  updateRemoteFilterBtn();
+  updateSalaryFilterBtn();
+  updateHideStaleBtn();
+  renderFilters();
   render();
   if (statsVisible) renderStats();
 }
