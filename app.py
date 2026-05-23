@@ -187,6 +187,59 @@ def api_status():
                     "sources": sources, "errors": errors})
 
 
+@app.route("/api/history")
+def api_history():
+    """Return history of recent check runs from check.log."""
+    log_file = os.path.join(BASE_DIR, "check.log")
+    if not os.path.exists(log_file):
+        return jsonify({"runs": []})
+
+    with open(log_file, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    runs = []
+    current = None
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        # Lines without a timestamp (e.g. "Done. Added N vacancies...")
+        if not line.startswith('['):
+            if current is not None:
+                done_m = re.search(r'Done\. Added (\d+) vacanc', line)
+                if done_m:
+                    current['added'] = int(done_m.group(1))
+                    skip_m = re.search(r'skipped (\d+)', line)
+                    if skip_m:
+                        current['skipped'] = int(skip_m.group(1))
+            continue
+
+        ts_m = re.match(r'^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}):\d{2}\]', line)
+        if not ts_m:
+            continue
+        ts = ts_m.group(1)
+
+        if 'Starting vacancy check' in line:
+            if current and current.get('date'):
+                runs.append(current)
+            current = {'date': ts, 'added': None, 'skipped': 0, 'found': 0}
+            continue
+
+        if current is None:
+            continue
+
+        found_m = re.search(r'Found (\d+) new on', line)
+        if found_m:
+            current['found'] = current.get('found', 0) + int(found_m.group(1))
+
+    if current and current.get('date'):
+        runs.append(current)
+
+    valid_runs = [r for r in runs if r.get('date')]
+    return jsonify({"runs": valid_runs[-10:][::-1]})
+
+
 @app.route("/api/vacancies", methods=["DELETE"])
 def api_delete():
     url = request.json.get("url", "")

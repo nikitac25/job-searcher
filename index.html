@@ -626,6 +626,18 @@
     font-weight: 590;
     margin-left: 3px;
   }
+  /* Check history list in stats panel */
+  .check-history-list { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+  .check-history-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 6px 4px 8px; border-radius: 4px;
+    background: rgba(255,255,255,.015);
+    border-left: 2px solid var(--border);
+  }
+  .check-history-date { color: var(--muted); font-size: 11px; min-width: 84px; font-family: ui-monospace, "SF Mono", monospace; }
+  .check-history-added { min-width: 28px; text-align: right; }
+  .check-history-detail { flex: 1; }
+
   /* Stats button icon inside filters */
   .filter-btn svg { width: 14px; height: 14px; }
 
@@ -1031,6 +1043,7 @@ let lastCheckTs = null;      // raw ISO datetime string of last check
 let lastCheckAdded = null;  // number added in last check (null = unknown)
 let lastCheckSources = {};  // {source_key: count}
 let lastCheckErrors = [];   // list of error strings
+let historyData = [];        // [{date, added, skipped, found}, ...] from /api/history
 
 function _computeAgo(isoStr) {
   if (!isoStr) return '';
@@ -1924,8 +1937,11 @@ function _closeCheckDetail() {
 
 async function loadStatus() {
   try {
-    const r = await fetch('/api/status');
-    const s = await r.json();
+    const [statusR, histR] = await Promise.all([
+      fetch('/api/status'),
+      fetch('/api/history'),
+    ]);
+    const s = await statusR.json();
     if (s.last_check) {
       lastCheckTs = s.last_check;
       lastCheckAdded = s.added !== undefined ? s.added : null;
@@ -1933,6 +1949,9 @@ async function loadStatus() {
       lastCheckErrors = s.errors || [];
       status('ok');
     }
+    const h = await histR.json();
+    historyData = h.runs || [];
+    if (statsVisible) renderStats();
   } catch(e) {}
 }
 
@@ -2318,6 +2337,36 @@ function renderStats() {
     }
   }
 
+  // Pre-compute check history card HTML
+  let historyCardHtml = '';
+  if (historyData.length) {
+    let histRowsHtml = '';
+    for (const run of historyData) {
+      const d = (run.date || '').replace(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})$/, '$3.$2 $4');
+      const added = run.added;
+      const found = run.found || 0;
+      const skipped = run.skipped || 0;
+      const rowStyle = added > 0 ? 'border-left:2px solid var(--green-bright)' : 'border-left:2px solid var(--border)';
+      const addedStr = added === null
+        ? '<span style="color:var(--yellow);font-size:11px">\u26a0</span>'
+        : added > 0
+          ? '<span style="color:var(--green-bright);font-weight:600;font-size:12px">+' + added + '</span>'
+          : '<span style="color:var(--muted-deep);font-size:12px">\u2014</span>';
+      const detailStr = found > 0
+        ? '<span style="color:var(--muted);font-size:10px">\u0437\u043d\u0430\u0439\u0434\u0435\u043d\u043e ' + found + (skipped ? ', \u043f\u0440\u043e\u043f\u0443\u0449. ' + skipped : '') + '</span>'
+        : '<span style="color:var(--muted-deep);font-size:10px">\u043d\u0456\u0447\u043e\u0433\u043e \u043d\u043e\u0432\u043e\u0433\u043e</span>';
+      histRowsHtml += '<div class="check-history-row" style="' + rowStyle + '">'
+        + '<span class="check-history-date">' + d + '</span>'
+        + '<span class="check-history-added">' + addedStr + '</span>'
+        + '<span class="check-history-detail">' + detailStr + '</span>'
+        + '</div>';
+    }
+    historyCardHtml = '<div class="stat-card wide">'
+      + '<div class="stat-label">\u041e\u0441\u0442\u0430\u043d\u043d\u0456 \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u043a\u0438</div>'
+      + '<div class="check-history-list">' + histRowsHtml + '</div>'
+      + '</div>';
+  }
+
   document.getElementById('statsPanel').innerHTML = `
     <div class="stats-panel">
       <div class="stat-card">
@@ -2381,6 +2430,7 @@ function renderStats() {
         </div>
         <div class="sources-list">${workFmtHtml}</div>
       </div>
+      ${historyCardHtml}
     </div>`;
 }
 
