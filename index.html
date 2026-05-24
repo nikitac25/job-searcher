@@ -2337,6 +2337,69 @@ function renderStats() {
     }
   }
 
+  // Salary distribution analytics card
+  let salaryCardHtml = '';
+  {
+    const salaryValues = [];
+    let noSalary = 0;
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        const sv = parseSalaryNum(v);
+        if (sv === -1) noSalary++;
+        else salaryValues.push(sv);
+      }
+    }
+    const withSalary = salaryValues.length;
+    const totalForSalary = withSalary + noSalary;
+    if (totalForSalary > 0) {
+      // Buckets: PLN-equiv < 8000 ≈ <$2k, 8000-16000 ≈ $2-4k, 16000-24000 ≈ $4-6k, >24000 ≈ >$6k
+      const SAL_BUCKETS = [
+        { label: '<$2k',  max: 8000,           color: 'var(--red)',         count: 0 },
+        { label: '$2–4k', min: 8000,  max: 16000, color: 'var(--yellow)',     count: 0 },
+        { label: '$4–6k', min: 16000, max: 24000, color: 'var(--green)',      count: 0 },
+        { label: '>$6k',  min: 24000,            color: 'var(--green-bright)', count: 0 },
+      ];
+      for (const sv of salaryValues) {
+        if (sv < 8000)       SAL_BUCKETS[0].count++;
+        else if (sv < 16000) SAL_BUCKETS[1].count++;
+        else if (sv < 24000) SAL_BUCKETS[2].count++;
+        else                 SAL_BUCKETS[3].count++;
+      }
+      // Median (in USD-equiv: PLN-equiv / 4)
+      const sortedSal = [...salaryValues].sort((a, b) => a - b);
+      const medPLN = sortedSal.length ? sortedSal[Math.floor(sortedSal.length / 2)] : null;
+      const medUSD = medPLN !== null ? Math.round(medPLN / 4) : null;
+      const medStr = medUSD !== null
+        ? '~$' + (medUSD >= 1000 ? (medUSD / 1000).toFixed(1) + 'k' : medUSD) + '/мо'
+        : '—';
+      const noPct = Math.round(noSalary / totalForSalary * 100);
+      const withPct = 100 - noPct;
+
+      // Stacked horizontal bar segments
+      const barSegsHtml = SAL_BUCKETS.map(b => {
+        const pctOfWith = withSalary ? (b.count / withSalary * 100).toFixed(1) : 0;
+        return b.count > 0
+          ? `<div style="flex:${b.count};background:${b.color};height:8px;border-radius:2px;min-width:4px" title="${b.label}: ${b.count} (${pctOfWith}% від вакансій із зарплатою)"></div>`
+          : '';
+      }).join('') + (noSalary > 0
+        ? `<div style="flex:${noSalary};background:rgba(255,255,255,0.07);height:8px;border-radius:2px;min-width:4px" title="Не вказана: ${noSalary} (${noPct}%)"></div>`
+        : '');
+
+      salaryCardHtml = `<div class="stat-card wide">
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Аналітика зарплат</span>
+          <span style="color:var(--muted-deep);font-size:10px">медіана ${medStr} · вказана у ${withPct}%</span>
+        </div>
+        <div style="display:flex;gap:3px;height:8px;border-radius:4px;overflow:hidden;margin:8px 0 4px">${barSegsHtml}</div>
+        <div class="score-bar-legend">
+          ${SAL_BUCKETS.map(b => `<span><span class="legend-dot" style="background:${b.color}"></span>${b.label}: ${b.count}</span>`).join('')}
+          <span><span class="legend-dot" style="background:rgba(255,255,255,0.12)"></span>Не вказана: ${noSalary}</span>
+        </div>
+      </div>`;
+    }
+  }
+
   // Pre-compute check history card HTML
   let historyCardHtml = '';
   if (historyData.length) {
@@ -2430,6 +2493,7 @@ function renderStats() {
         </div>
         <div class="sources-list">${workFmtHtml}</div>
       </div>
+      ${salaryCardHtml}
       ${historyCardHtml}
     </div>`;
 }
