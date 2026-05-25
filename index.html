@@ -1295,7 +1295,7 @@ function applyPendingData() {
 }
 
 function renderFilters() {
-  const scores = {all:0, hot:0, ok:0, skip:0, new:0, fav:0, notes:0, applied:0, interview:0, offer:0, rejected:0};
+  const scores = {all:0, hot:0, ok:0, skip:0, new:0, fav:0, notes:0, applied:0, interview:0, offer:0, rejected:0, recent:0};
   const favs = getFavUrls();
   const statuses = getStatuses();
   const notes = getNotes();
@@ -1308,6 +1308,7 @@ function renderFilters() {
       if (isNew(v.url)) scores.new++;
       if (favs.has(v.url)) scores.fav++;
       if (notes[v.url]) scores.notes++;
+      const _age = getAgeDays(v); if (_age >= 0 && _age <= 7) scores.recent++;
       const st = statuses[v.url];
       if (st === 'Applied') scores.applied++;
       else if (st === 'Interview') scores.interview++;
@@ -1326,6 +1327,7 @@ function renderFilters() {
     fb('all','Всі',scores.all) +
     fb('fav','Fav',scores.fav) +
     fb('new','New',scores.new) +
+    fb('recent','Recent',scores.recent) +
     fb('hot','Hot',scores.hot) +
     fb('ok','OK',scores.ok) +
     fb('skip','Skip',scores.skip) +
@@ -1453,6 +1455,7 @@ function passFilter(v) {
   if (activeFilter === 'all') return true;
   if (activeFilter === 'fav') return isFav(v.url);
   if (activeFilter === 'new') return isNew(v.url);
+  if (activeFilter === 'recent') { const age = getAgeDays(v); return age >= 0 && age <= 7; }
   if (activeFilter === 'hot') return v.score >= 6;
   if (activeFilter === 'ok') return v.score >= 4 && v.score < 6;
   if (activeFilter === 'skip') return v.score !== null && v.score < 4;
@@ -2121,7 +2124,7 @@ function setScoreFilter(score) {
 function renderActiveFiltersBar() {
   const bar = document.getElementById('activeFiltersBar');
   if (!bar) return;
-  const TAB_LABELS = {fav:'Fav', new:'New', hot:'Hot (≥6)', ok:'OK (4–5)', skip:'Skip (<4)', notes:'Notes'};
+  const TAB_LABELS = {fav:'Fav', new:'New', recent:'Recent (7д)', hot:'Hot (≥6)', ok:'OK (4–5)', skip:'Skip (<4)', notes:'Notes'};
   const chips = [];
   if (activeFilter !== 'all' && activeFilter !== 'pipeline') {
     chips.push({label: TAB_LABELS[activeFilter] || activeFilter, onclick: `setFilter('all')`});
