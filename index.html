@@ -1039,6 +1039,7 @@ let activeScoreExact = null;  // score filter from histogram bar click
 let filterType = '';  // normalized company type filter ('Product', 'Outsource/Agency', etc.)
 let filterSource = localStorage.getItem('filterSource') || '';  // source section filter ('Djinni', 'NoFluffJobs_bi', etc.)
 let filterWorkFormat = localStorage.getItem('filterWorkFormat') || '';  // work format filter ('Remote', 'Hybrid', 'Office')
+let filterPipelineStatus = '';  // pipeline status filter ('Applied', 'Interview', 'Offer', 'Rejected')
 let lastCheckTs = null;      // raw ISO datetime string of last check
 let lastCheckAdded = null;  // number added in last check (null = unknown)
 let lastCheckSources = {};  // {source_key: count}
@@ -1304,6 +1305,7 @@ function renderFilters() {
     if (filterSource && s.name !== filterSource) continue;
     for (const v of s.items) {
       if (filterWorkFormat && normalizeRemote(v.remote) !== filterWorkFormat) continue;
+      if (filterPipelineStatus && (statuses[v.url] || '') !== filterPipelineStatus) continue;
       scores.all++;
       if (isNew(v.url)) scores.new++;
       if (favs.has(v.url)) scores.fav++;
@@ -1366,6 +1368,13 @@ function quickFilterSource(src) {
 function quickFilterWorkFormat(fmt) {
   filterWorkFormat = filterWorkFormat === fmt ? '' : fmt;
   localStorage.setItem('filterWorkFormat', filterWorkFormat);
+  renderFilters();
+  render();
+  if (statsVisible) renderStats();
+}
+
+function quickFilterPipelineStatus(status) {
+  filterPipelineStatus = filterPipelineStatus === status ? '' : status;
   renderFilters();
   render();
   if (statsVisible) renderStats();
@@ -1450,6 +1459,7 @@ function passFilter(v) {
   if (filterRemote && !isRemoteFriendly(v)) return false;
   if (filterSalary && !isSalarySpecified(v)) return false;
   if (filterWorkFormat) { const nrf = normalizeRemote(v.remote); if (nrf !== filterWorkFormat) return false; }
+  if (filterPipelineStatus) { if (getStatus(v.url) !== filterPipelineStatus) return false; }
   if (activeScoreExact !== null && v.score !== activeScoreExact) return false;
   if (filterType) { const vt = normalizeType(v.type) || 'Не вказано'; if (vt !== filterType) return false; }
   if (activeFilter === 'all') return true;
@@ -1767,14 +1777,15 @@ function render() {
   // Restore max-height for open cards after DOM rebuild
   document.querySelectorAll('.card.open .card-panel').forEach(p => { p.style.maxHeight = 'none'; });
   const totalAll = allData.reduce((acc, s) => SKIP.includes(s.name) ? acc : acc + s.items.length, 0);
-  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null || !!filterType || filterRemote || filterSalary || !!filterSource || !!filterWorkFormat;
+  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null || !!filterType || filterRemote || filterSalary || !!filterSource || !!filterWorkFormat || !!filterPipelineStatus;
   const scorePart = activeScoreExact !== null ? ` · Score ${activeScoreExact}/10` : '';
   const typePart2 = filterType ? ` · Тип: ${filterType}` : '';
   const salaryPart = filterSalary ? ' · З зарплатою' : '';
   const sourcePart = filterSource ? ` · Джерело: ${filterSource}` : '';
   const workFmtPart = filterWorkFormat ? ` · ${filterWorkFormat}` : '';
+  const pipelineStatusPart = filterPipelineStatus ? ` · ${filterPipelineStatus}` : '';
   document.getElementById('meta').textContent = isFiltered
-    ? `Показано: ${total} з ${totalAll}${scorePart}${typePart2}${salaryPart}${sourcePart}${workFmtPart} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
+    ? `Показано: ${total} з ${totalAll}${scorePart}${typePart2}${salaryPart}${sourcePart}${workFmtPart}${pipelineStatusPart} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
     : `Всього: ${total} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
   updateBulkDeleteBtn();
 }
@@ -2141,6 +2152,9 @@ function renderActiveFiltersBar() {
   if (filterWorkFormat) {
     chips.push({label: filterWorkFormat, onclick: `quickFilterWorkFormat('${escA(filterWorkFormat)}')`});
   }
+  if (filterPipelineStatus) {
+    chips.push({label: `Pipeline: ${filterPipelineStatus}`, onclick: `quickFilterPipelineStatus('${escA(filterPipelineStatus)}')`});
+  }
   if (filterRemote) {
     chips.push({label: 'Тільки Remote', onclick: 'toggleRemoteFilter()'});
   }
@@ -2180,6 +2194,7 @@ function clearAllFilters() {
   filterType = '';
   filterSource = '';
   filterWorkFormat = '';
+  filterPipelineStatus = '';
   filterRemote = false;
   filterSalary = false;
   hideStale = false;
@@ -2452,13 +2467,21 @@ function renderStats() {
         <div class="stat-value" style="color:var(--accent)">${noteCount}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Pipeline</div>
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Pipeline</span>
+          ${filterPipelineStatus ? `<span class="score-filter-badge" onclick="quickFilterPipelineStatus('${escA(filterPipelineStatus)}')" title="Скинути фільтр"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ${esc(filterPipelineStatus)}</span>` : `<span style="font-size:10px;color:var(--muted-deep)">клік → фільтр</span>`}
+        </div>
         <div class="stat-value">${pipelineTotal}</div>
         <div class="sources-list" style="margin-top:6px">
-          <span class="source-chip" style="color:var(--accent)">Applied<b>${pipeline.Applied}</b></span>
-          <span class="source-chip" style="color:var(--green)">Interview<b>${pipeline.Interview}</b></span>
-          <span class="source-chip" style="color:#2ed573">Offer<b>${pipeline.Offer}</b></span>
-          <span class="source-chip" style="color:var(--muted)">Rejected<b>${pipeline.Rejected}</b></span>
+          ${['Applied','Interview','Offer','Rejected'].map((st, i) => {
+            const colors = ['var(--accent)','var(--green)','#2ed573','var(--muted)'];
+            const cnt = pipeline[st];
+            const isActive = filterPipelineStatus === st;
+            const chipStyle = isActive
+              ? `cursor:pointer;background:rgba(94,106,210,.15);border-color:rgba(113,112,255,.3);color:var(--accent-bright)`
+              : `cursor:pointer;color:${colors[i]}`;
+            return `<span class="source-chip" onclick="quickFilterPipelineStatus('${st}')" style="${chipStyle}" title="Клік — фільтрувати за статусом">${st}<b>${cnt}</b></span>`;
+          }).join('')}
         </div>
       </div>
       <div class="stat-card wide">
