@@ -2418,6 +2418,54 @@ function renderStats() {
     }
   }
 
+  // Age distribution card (pipeline freshness)
+  let ageCardHtml = '';
+  {
+    const AGE_BUCKETS = [
+      { label: 'Сьогодні',   color: 'var(--green-bright)',          count: 0 },
+      { label: '1–3 дні',    color: 'var(--green)',                  count: 0 },
+      { label: '4–7 днів',   color: 'var(--yellow)',                 count: 0 },
+      { label: '1–2 тижні',  color: 'rgba(255,165,2,.45)',           count: 0 },
+      { label: '2–4 тижні',  color: 'rgba(255,71,87,.65)',           count: 0 },
+      { label: 'Старше',     color: 'rgba(255,71,87,.3)',            count: 0 },
+    ];
+    let noDate = 0;
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        const age = getAgeDays(v);
+        if (age < 0) { noDate++; continue; }
+        if (age === 0)       AGE_BUCKETS[0].count++;
+        else if (age <= 3)   AGE_BUCKETS[1].count++;
+        else if (age <= 7)   AGE_BUCKETS[2].count++;
+        else if (age <= 14)  AGE_BUCKETS[3].count++;
+        else if (age <= 28)  AGE_BUCKETS[4].count++;
+        else                 AGE_BUCKETS[5].count++;
+      }
+    }
+    const totalWithDate = AGE_BUCKETS.reduce((a, b) => a + b.count, 0);
+    const freshCount = AGE_BUCKETS[0].count + AGE_BUCKETS[1].count + AGE_BUCKETS[2].count;
+    const freshPct = totalWithDate ? Math.round(freshCount / totalWithDate * 100) : 0;
+    const barSegsHtml = AGE_BUCKETS.map(b =>
+      b.count > 0
+        ? `<div style="flex:${b.count};background:${b.color};height:8px;border-radius:2px;min-width:4px" title="${b.label}: ${b.count}"></div>`
+        : ''
+    ).join('') + (noDate > 0
+      ? `<div style="flex:${noDate};background:rgba(255,255,255,0.07);height:8px;border-radius:2px;min-width:4px" title="Без дати: ${noDate}"></div>`
+      : '');
+    ageCardHtml = `<div class="stat-card wide">
+      <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Актуальність вакансій</span>
+        <span style="color:var(--muted-deep);font-size:10px">свіжих ≤7д: ${freshCount} · ${freshPct}%</span>
+      </div>
+      <div style="display:flex;gap:3px;height:8px;border-radius:4px;overflow:hidden;margin:8px 0 4px">${barSegsHtml}</div>
+      <div class="score-bar-legend">
+        ${AGE_BUCKETS.map(b => `<span><span class="legend-dot" style="background:${b.color}"></span>${b.label}: ${b.count}</span>`).join('')}
+        ${noDate > 0 ? `<span><span class="legend-dot" style="background:rgba(255,255,255,0.12)"></span>Без дати: ${noDate}</span>` : ''}
+      </div>
+    </div>`;
+  }
+
   // Pre-compute check history card HTML
   let historyCardHtml = '';
   if (historyData.length) {
@@ -2520,6 +2568,7 @@ function renderStats() {
         <div class="sources-list">${workFmtHtml}</div>
       </div>
       ${salaryCardHtml}
+      ${ageCardHtml}
       ${historyCardHtml}
     </div>`;
 }
