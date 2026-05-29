@@ -970,6 +970,10 @@
     <button class="sort-btn" onclick="setSort('score')">Score ↓</button>
     <button class="sort-btn" onclick="setSort('date')">Date ↓</button>
     <button class="sort-btn" onclick="setSort('salary')">Salary ↓</button>
+    <span class="sort-label" style="margin-left:6px;border-left:1px solid rgba(255,255,255,0.08);padding-left:10px">Min:</span>
+    <button class="sort-btn scoremin-btn" data-min="6" onclick="setScoreMin(6)" title="Показати тільки вакансії з балом ≥6">≥6</button>
+    <button class="sort-btn scoremin-btn" data-min="7" onclick="setScoreMin(7)" title="Показати тільки вакансії з балом ≥7">≥7</button>
+    <button class="sort-btn scoremin-btn" data-min="8" onclick="setScoreMin(8)" title="Показати тільки вакансії з балом ≥8">≥8</button>
   </div>
   <div class="view-toggle">
     <button class="view-btn active" id="viewCard" onclick="setView('card')" title="Картки"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/></svg></button>
@@ -1043,6 +1047,7 @@ let hideStale = localStorage.getItem('hideStale') === '1';
 let filterRemote = localStorage.getItem('filterRemote') === '1';  // show only remote-friendly vacancies
 let filterSalary = localStorage.getItem('filterSalary') === '1';  // show only vacancies with salary specified
 let activeScoreExact = null;  // score filter from histogram bar click
+let scoreMin = 0;             // minimum score filter (0 = disabled; 7 = show score ≥7, etc.)
 let filterType = '';  // normalized company type filter ('Product', 'Outsource/Agency', etc.)
 let filterSource = localStorage.getItem('filterSource') || '';  // source section filter ('Djinni', 'NoFluffJobs_bi', etc.)
 let filterWorkFormat = localStorage.getItem('filterWorkFormat') || '';  // work format filter ('Remote', 'Hybrid', 'Office')
@@ -1468,6 +1473,7 @@ function passFilter(v) {
   if (filterWorkFormat) { const nrf = normalizeRemote(v.remote); if (nrf !== filterWorkFormat) return false; }
   if (filterPipelineStatus) { if (getStatus(v.url) !== filterPipelineStatus) return false; }
   if (activeScoreExact !== null && v.score !== activeScoreExact) return false;
+  if (scoreMin > 0 && (v.score === null || v.score < scoreMin)) return false;
   if (filterType) { const vt = normalizeType(v.type) || 'Не вказано'; if (vt !== filterType) return false; }
   if (activeFilter === 'all') return true;
   if (activeFilter === 'fav') return isFav(v.url);
@@ -1786,8 +1792,8 @@ function render() {
   // Restore max-height for open cards after DOM rebuild
   document.querySelectorAll('.card.open .card-panel').forEach(p => { p.style.maxHeight = 'none'; });
   const totalAll = allData.reduce((acc, s) => SKIP.includes(s.name) ? acc : acc + s.items.length, 0);
-  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null || !!filterType || filterRemote || filterSalary || !!filterSource || !!filterWorkFormat || !!filterPipelineStatus;
-  const scorePart = activeScoreExact !== null ? ` · Score ${activeScoreExact}/10` : '';
+  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null || scoreMin > 0 || !!filterType || filterRemote || filterSalary || !!filterSource || !!filterWorkFormat || !!filterPipelineStatus;
+  const scorePart = activeScoreExact !== null ? ` · Score ${activeScoreExact}/10` : (scoreMin > 0 ? ` · Score ≥${scoreMin}` : '');
   const typePart2 = filterType ? ` · Тип: ${filterType}` : '';
   const salaryPart = filterSalary ? ' · З зарплатою' : '';
   const sourcePart = filterSource ? ` · Джерело: ${filterSource}` : '';
@@ -2129,6 +2135,8 @@ function setScoreFilter(score) {
     activeScoreExact = null;
   } else {
     activeScoreExact = score;
+    scoreMin = 0;  // exact score filter takes over; clear min filter
+    document.querySelectorAll('.scoremin-btn').forEach(b => b.classList.remove('active'));
     // Open stats panel if not already visible
     if (!statsVisible) {
       statsVisible = true;
@@ -2141,6 +2149,17 @@ function setScoreFilter(score) {
   renderActiveFiltersBar();
 }
 
+function setScoreMin(n) {
+  scoreMin = scoreMin === n ? 0 : n;
+  if (scoreMin > 0) activeScoreExact = null;  // exact filter and min filter are mutually exclusive
+  document.querySelectorAll('.scoremin-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.min) === scoreMin);
+  });
+  render();
+  renderActiveFiltersBar();
+  if (statsVisible) renderStats();
+}
+
 function renderActiveFiltersBar() {
   const bar = document.getElementById('activeFiltersBar');
   if (!bar) return;
@@ -2151,6 +2170,9 @@ function renderActiveFiltersBar() {
   }
   if (activeScoreExact !== null) {
     chips.push({label: `Score ${activeScoreExact}/10`, onclick: `setScoreFilter(${activeScoreExact})`});
+  }
+  if (scoreMin > 0) {
+    chips.push({label: `Score ≥${scoreMin}`, onclick: `setScoreMin(${scoreMin})`});
   }
   if (filterType) {
     chips.push({label: `Тип: ${filterType}`, onclick: `quickFilterType('${escA(filterType)}')`});
@@ -2200,6 +2222,7 @@ function clearSearch() {
 function clearAllFilters() {
   activeFilter = 'all';
   activeScoreExact = null;
+  scoreMin = 0;
   filterType = '';
   filterSource = '';
   filterWorkFormat = '';
@@ -2208,6 +2231,7 @@ function clearAllFilters() {
   filterSalary = false;
   hideStale = false;
   searchQuery = '';
+  document.querySelectorAll('.scoremin-btn').forEach(b => b.classList.remove('active'));
   localStorage.setItem('filterSource', '');
   localStorage.setItem('filterWorkFormat', '');
   localStorage.setItem('filterRemote', '0');
