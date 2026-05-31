@@ -1149,13 +1149,59 @@ function getStatuses() {
 }
 function setStatus(url, status) {
   const statuses = getStatuses();
-  if (status === 'Status') delete statuses[url]; else statuses[url] = status;
+  if (status === 'Status') {
+    delete statuses[url];
+    clearStatusDates(url);
+  } else {
+    statuses[url] = status;
+    // Record the date for this status milestone (only if not already recorded)
+    if (status !== 'Status' && !getStatusDate(url, status)) {
+      saveStatusDate(url, status);
+    }
+  }
   localStorage.setItem('vacancyStatuses', JSON.stringify(statuses));
   renderFilters();
   render();
   if (statsVisible) renderStats();
 }
 function getStatus(url) { return getStatuses()[url] || ''; }
+
+// Pipeline status date tracking
+function getStatusDates() {
+  try { return JSON.parse(localStorage.getItem('vacancyStatusDates') || '{}'); }
+  catch { return {}; }
+}
+function getStatusDate(url, status) {
+  const d = getStatusDates();
+  return (d[url] || {})[status] || '';
+}
+function saveStatusDate(url, status) {
+  const d = getStatusDates();
+  if (!d[url]) d[url] = {};
+  d[url][status] = new Date().toISOString().slice(0, 10);
+  localStorage.setItem('vacancyStatusDates', JSON.stringify(d));
+}
+function clearStatusDates(url) {
+  const d = getStatusDates();
+  delete d[url];
+  localStorage.setItem('vacancyStatusDates', JSON.stringify(d));
+}
+function formatStatusDate(isoDate) {
+  if (!isoDate) return '';
+  const [y, m, day] = isoDate.split('-');
+  return `${day}.${m}.${y.slice(2)}`;
+}
+function getStatusMilestonesHtml(url) {
+  const cur = getStatus(url);
+  if (!cur) return '';
+  const ORDER = ['Applied', 'Interview', 'Offer', 'Rejected'];
+  const COLORS = { Applied: 'var(--accent-bright)', Interview: 'var(--green)', Offer: 'var(--green-bright)', Rejected: 'rgba(255,71,87,.7)' };
+  const parts = ORDER
+    .filter(s => getStatusDate(url, s))
+    .map(s => `<span style="color:${COLORS[s]};font-size:11px">${s}: <b style="color:var(--text-secondary)">${formatStatusDate(getStatusDate(url, s))}</b></span>`);
+  if (!parts.length) return '';
+  return `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:5px;padding:5px 0;border-top:1px solid var(--border-subtle)">${parts.join('')}</div>`;
+}
 
 // Notes tracking via localStorage
 function getNotes() {
@@ -1689,6 +1735,7 @@ function renderKanban() {
                 <div class="note-label">Нотатка <button class="note-edit-btn" onclick="event.stopPropagation(); startEditNote('${escA(v.url)}')">${hasNote(v.url) ? 'Редагувати' : 'Додати'}</button></div>
                 ${hasNote(v.url) ? `<div class="note-text">${esc(getNote(v.url))}</div>` : `<div class="note-text empty">Немає нотатки</div>`}
               </div>
+              ${getStatusMilestonesHtml(v.url)}
               <div class="panel-copy-row">
                 <button class="copy-btn" onclick="event.stopPropagation(); copyVacancy('${escA(v.url)}')" title="Копіювати деталі вакансії в буфер обміну">${_clipboardIcon} Копіювати</button>
               </div>
@@ -1777,6 +1824,7 @@ function render() {
               <div class="note-label">Нотатка <button class="note-edit-btn" onclick="event.stopPropagation(); startEditNote('${escA(v.url)}')">${hasNote(v.url) ? 'Редагувати' : 'Додати'}</button></div>
               ${hasNote(v.url) ? `<div class="note-text">${esc(getNote(v.url))}</div>` : `<div class="note-text empty">Немає нотатки</div>`}
             </div>
+            ${getStatusMilestonesHtml(v.url)}
             <div class="panel-copy-row">
               <button class="copy-btn" onclick="event.stopPropagation(); copyVacancy('${escA(v.url)}')" title="Копіювати деталі вакансії в буфер обміну">${_clipboardIcon} Копіювати</button>
             </div>
@@ -2537,9 +2585,30 @@ function renderStats() {
     const progressedPast = pipeline.Interview + pipeline.Offer;
     const rateInterview = pipelineTotal > 0 ? Math.round(progressedPast / pipelineTotal * 100) : null;
     const rateOffer = progressedPast > 0 ? Math.round(pipeline.Offer / progressedPast * 100) : null;
+
+    // Compute avg days Applied→Interview from date tracking
+    const statusDates = getStatusDates();
+    let appliedToInterviewDays = [];
+    let appliedToRejectedDays = [];
+    for (const url of Object.keys(statusDates)) {
+      const dates = statusDates[url];
+      if (dates.Applied && dates.Interview) {
+        const diff = (new Date(dates.Interview) - new Date(dates.Applied)) / 86400000;
+        if (diff >= 0) appliedToInterviewDays.push(diff);
+      }
+      if (dates.Applied && dates.Rejected && !dates.Interview) {
+        const diff = (new Date(dates.Rejected) - new Date(dates.Applied)) / 86400000;
+        if (diff >= 0) appliedToRejectedDays.push(diff);
+      }
+    }
+    const avgA2I = appliedToInterviewDays.length
+      ? Math.round(appliedToInterviewDays.reduce((a, b) => a + b, 0) / appliedToInterviewDays.length)
+      : null;
+
     const rateLabel = [
       rateInterview !== null ? `інтерв'ю: ${rateInterview}%` : '',
       rateOffer !== null ? `оффер: ${rateOffer}%` : '',
+      avgA2I !== null ? `відгук за ~${avgA2I}д` : '',
     ].filter(Boolean).join(' · ');
     const FUNNEL_STAGES = [
       { key: 'Applied',   label: 'Applied',   color: 'var(--accent-bright)' },
@@ -2926,7 +2995,8 @@ function exportCSV() {
   const statuses = getStatuses();
   const favs = getFavUrls();
   const notesData = getNotes();
-  const rows = [['Source', 'Title', 'URL', 'Score', 'Type', 'Salary', 'Remote', 'Date', 'Status', 'Pipeline', 'Favorite', 'Note']];
+  const allStatusDates = getStatusDates();
+  const rows = [['Source', 'Title', 'URL', 'Score', 'Type', 'Salary', 'Remote', 'Date', 'Status', 'Pipeline', 'Applied Date', 'Interview Date', 'Favorite', 'Note']];
 
   for (const section of allData) {
     if (SKIP.includes(section.name)) continue;
@@ -2935,6 +3005,7 @@ function exportCSV() {
         s = (s || '').replace(/"/g, '""');
         return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
       };
+      const urlDates = allStatusDates[v.url] || {};
       rows.push([
         csvEsc(section.name),
         csvEsc(v.title),
@@ -2946,6 +3017,8 @@ function exportCSV() {
         csvEsc(v.published || v.date || ''),
         csvEsc(v.status || 'active'),
         csvEsc(statuses[v.url] || ''),
+        csvEsc(urlDates.Applied || ''),
+        csvEsc(urlDates.Interview || ''),
         favs.has(v.url) ? 'yes' : '',
         csvEsc(notesData[v.url] || ''),
       ].join(','));
