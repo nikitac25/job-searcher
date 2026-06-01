@@ -268,6 +268,7 @@
   .tag-interview { color: var(--green-bright); border-color: rgba(16,185,129,.3); }
   .tag-offer { color: var(--green-bright); border-color: rgba(16,185,129,.4); font-weight: 590; }
   .tag-rejected { color: var(--muted-deep); border-color: rgb(45,47,53); text-decoration: line-through; }
+  .tag-followup { color: var(--yellow); border-color: rgba(255,165,2,.3); }
 
   /* Status selector */
   .status-sel {
@@ -1219,6 +1220,15 @@ function saveNote(url, text) {
 }
 function hasNote(url) { return !!getNote(url); }
 
+// Follow-up: status=Applied AND applied date ≥7 days ago with no progression
+function needsFollowUp(url) {
+  if (getStatus(url) !== 'Applied') return false;
+  const appliedDate = getStatusDate(url, 'Applied');
+  if (!appliedDate) return false;
+  const daysSince = Math.floor((Date.now() - new Date(appliedDate).getTime()) / 86400000);
+  return daysSince >= 7;
+}
+
 function startEditNote(url) {
   const card = document.querySelector(`.card[data-url="${CSS.escape(url)}"]`) || document.querySelector(`.card[data-url="${url}"]`);
   if (!card) return;
@@ -1354,7 +1364,7 @@ function applyPendingData() {
 }
 
 function renderFilters() {
-  const scores = {all:0, hot:0, ok:0, skip:0, new:0, fav:0, notes:0, applied:0, interview:0, offer:0, rejected:0, recent:0};
+  const scores = {all:0, hot:0, ok:0, skip:0, new:0, fav:0, notes:0, applied:0, interview:0, offer:0, rejected:0, recent:0, followup:0};
   const favs = getFavUrls();
   const statuses = getStatuses();
   const notes = getNotes();
@@ -1368,6 +1378,7 @@ function renderFilters() {
       if (isNew(v.url)) scores.new++;
       if (favs.has(v.url)) scores.fav++;
       if (notes[v.url]) scores.notes++;
+      if (needsFollowUp(v.url)) scores.followup++;
       const _age = getAgeDays(v); if (_age >= 0 && _age <= 7) scores.recent++;
       const st = statuses[v.url];
       if (st === 'Applied') scores.applied++;
@@ -1392,6 +1403,7 @@ function renderFilters() {
     fb('ok','OK',scores.ok) +
     fb('skip','Skip',scores.skip) +
     fb('notes','Notes',scores.notes) +
+    (scores.followup > 0 ? fb('followup','↩ Follow-up',scores.followup) : '') +
     fb('pipeline','Pipeline',pipelineCount) +
     `<button class="filter-btn ${statsVisible?'active':''}" onclick="toggleStats()">${IC.barChart} Stats</button>`;
   renderActiveFiltersBar();
@@ -1529,6 +1541,7 @@ function passFilter(v) {
   if (activeFilter === 'ok') return v.score >= 4 && v.score < 6;
   if (activeFilter === 'skip') return v.score !== null && v.score < 4;
   if (activeFilter === 'notes') return hasNote(v.url);
+  if (activeFilter === 'followup') return needsFollowUp(v.url);
   if (activeFilter === 'pipeline') return !!getStatus(v.url);
   return true;
 }
@@ -1714,6 +1727,7 @@ function renderKanban() {
                 ${getDateTag(v)}
                 ${isFav(v.url) ? '<span class="tag tag-fav">fav</span>' : ''}
                 ${hasNote(v.url) ? '<span class="tag tag-note">note</span>' : ''}
+                ${needsFollowUp(v.url) ? '<span class="tag tag-followup" title="Подано ≥7 днів тому — можливо, варто нагадати про себе">↩ follow-up</span>' : ''}
               </div>
               ${v.summary ? `<div class="card-summary-preview">${esc(v.summary)}</div>` : ''}
             </div>
@@ -1801,6 +1815,7 @@ function render() {
               ${isNew(v.url) ? '<span class="tag tag-new">new</span>' : ''}
               ${isFav(v.url) ? '<span class="tag tag-fav">fav</span>' : ''}
               ${statusTag(v.url)}
+              ${needsFollowUp(v.url) ? '<span class="tag tag-followup" title="Подано ≥7 днів тому — можливо, варто нагадати про себе">↩ follow-up</span>' : ''}
               ${hasNote(v.url) ? '<span class="tag tag-note">note</span>' : ''}
             </div>
             ${v.summary ? `<div class="card-summary-preview">${searchQuery ? highlightText(v.summary, searchQuery) : esc(v.summary)}</div>` : ''}
@@ -2211,7 +2226,7 @@ function setScoreMin(n) {
 function renderActiveFiltersBar() {
   const bar = document.getElementById('activeFiltersBar');
   if (!bar) return;
-  const TAB_LABELS = {fav:'Fav', new:'New', recent:'Recent (7д)', hot:'Hot (≥6)', ok:'OK (4–5)', skip:'Skip (<4)', notes:'Notes'};
+  const TAB_LABELS = {fav:'Fav', new:'New', recent:'Recent (7д)', hot:'Hot (≥6)', ok:'OK (4–5)', skip:'Skip (<4)', notes:'Notes', followup:'Follow-up (≥7д)'};
   const chips = [];
   if (activeFilter !== 'all' && activeFilter !== 'pipeline') {
     chips.push({label: TAB_LABELS[activeFilter] || activeFilter, onclick: `setFilter('all')`});
@@ -2304,6 +2319,7 @@ function renderStats() {
   const statuses = getStatuses();
   const notesData = getNotes();
   const pipeline = {Applied:0, Interview:0, Offer:0, Rejected:0};
+  let followupCount = 0;
   for (const s of allData) {
     if (SKIP.includes(s.name)) continue;
     for (const v of s.items) {
@@ -2312,6 +2328,7 @@ function renderStats() {
       if (notesData[v.url]) noteCount++;
       const st = statuses[v.url];
       if (st && pipeline.hasOwnProperty(st)) pipeline[st]++;
+      if (needsFollowUp(v.url)) followupCount++;
       if (!sources[s.name]) sources[s.name] = { count: 0, sum: 0, scored: 0 };
       sources[s.name].count++;
       if (v.score === null) { none++; }
@@ -2671,6 +2688,7 @@ function renderStats() {
             return `<span class="source-chip" onclick="quickFilterPipelineStatus('${st}')" style="${chipStyle}" title="Клік — фільтрувати за статусом">${st}<b>${cnt}</b></span>`;
           }).join('')}
         </div>
+        ${followupCount > 0 ? `<div style="margin-top:8px;font-size:11px;color:var(--yellow);display:flex;align-items:center;gap:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Потребує follow-up: <b style="color:var(--text-secondary)">${followupCount}</b> — <span style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="setFilter('followup')">переглянути</span></span></div>` : ''}
       </div>
       ${funnelCardHtml}
       <div class="stat-card wide">
