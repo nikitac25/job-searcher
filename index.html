@@ -971,6 +971,7 @@
     <button class="sort-btn" onclick="setSort('score')">Score ↓</button>
     <button class="sort-btn" onclick="setSort('date')">Date ↓</button>
     <button class="sort-btn" onclick="setSort('salary')">Salary ↓</button>
+    <button class="sort-btn" onclick="setSort('smart')" title="Рейтинг зі штрафом за вік: Score − 1 за кожні 7 днів (макс −3). Нові топ-вакансії — вгорі.">Smart ↓</button>
     <span class="sort-label" style="margin-left:6px;border-left:1px solid rgba(255,255,255,0.08);padding-left:10px">Min:</span>
     <button class="sort-btn scoremin-btn" data-min="6" onclick="setScoreMin(6)" title="Показати тільки вакансії з балом ≥6">≥6</button>
     <button class="sort-btn scoremin-btn" data-min="7" onclick="setScoreMin(7)" title="Показати тільки вакансії з балом ≥7">≥7</button>
@@ -1503,6 +1504,16 @@ function sortItems(items) {
       if (sb === -1) return -1;
       return sb - sa;
     });
+  } else if (activeSort === 'smart') {
+    // Freshness-weighted score: penalises old vacancies by 1pt per 7 days, capped at 3pts.
+    // Vacancies with no score go to the bottom; no date means no penalty.
+    const smartScore = v => {
+      if (v.score === null) return -999;
+      const age = Math.max(getAgeDays(v), 0);
+      const penalty = Math.min(age / 7, 3);
+      return v.score - penalty;
+    };
+    sorted.sort((a, b) => smartScore(b) - smartScore(a));
   }
   return sorted;
 }
