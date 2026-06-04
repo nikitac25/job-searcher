@@ -408,6 +408,22 @@
     margin-left: 6px; opacity: .85;
   }
 
+  /* Back to top button */
+  .back-to-top {
+    position: fixed; bottom: 48px; right: 16px;
+    width: 36px; height: 36px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 50%; color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 15;
+    box-shadow: 0 2px 10px rgba(0,0,0,.4);
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s, background .15s, color .15s;
+  }
+  .back-to-top.visible { opacity: 1; pointer-events: auto; }
+  .back-to-top:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+  .back-to-top svg { width: 16px; height: 16px; }
+
   /* Keyboard shortcuts overlay */
   .kb-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.85);
@@ -1014,6 +1030,9 @@
   <span id="toastMsg"></span>
   <button class="toast-dismiss" onclick="event.stopPropagation(); dismissToast()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
 </div>
+<button class="back-to-top" id="backToTopBtn" onclick="scrollToTop()" title="Вгору (g)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+</button>
 <div class="status-bar" id="statusBar">
   <span class="dot dot-ok"></span> Підключено
   <span class="kb-hint" onclick="showKbHelp()" title="Keyboard shortcuts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M8 12h.001"/><path d="M12 12h.001"/><path d="M16 12h.001"/><path d="M7 16h10"/></svg></span>
@@ -2764,6 +2783,16 @@ function setFocus(idx) {
   card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Show/hide back-to-top button based on scroll position
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('backToTopBtn');
+  if (btn) btn.classList.toggle('visible', window.scrollY > 400);
+}, { passive: true });
+
 function showKbHelp() {
   const existing = document.querySelector('.kb-overlay');
   if (existing) { existing.remove(); return; }
@@ -2795,6 +2824,8 @@ function showKbHelp() {
     <div class="kb-row"><span class="kb-key">r</span><span class="kb-desc">Оновити список</span></div>
     <div class="kb-row"><span class="kb-key">v</span><span class="kb-desc">Перемкнути вигляд (картки/список)</span></div>
     <div class="kb-row"><span class="kb-key">h</span><span class="kb-desc">Сховати/показати застарілі</span></div>
+    <div class="kb-row"><span class="kb-key">q</span><span class="kb-desc">Показати/сховати панель Stats</span></div>
+    <div class="kb-row"><span class="kb-key">g</span><span class="kb-desc">Прокрутити на початок сторінки</span></div>
     <div class="kb-row"><span class="kb-key">/</span><span class="kb-desc">Фокус на пошук</span></div>
     <div class="kb-row"><span class="kb-key">?</span><span class="kb-desc">Показати цю довідку</span></div>
     <div class="kb-row"><span class="kb-key">Esc</span><span class="kb-desc">Закрити / зняти фокус</span></div>
@@ -2814,7 +2845,8 @@ document.addEventListener('keydown', (e) => {
   }
 
   const cards = getVisibleCards();
-  if (!cards.length && e.key !== '?') return;
+  const noCardsOk = new Set(['?', 'q', 'g', 'c', 'r', 'v', 'h', '/', '1','2','3','4','5','6','7','8']);
+  if (!cards.length && !noCardsOk.has(e.key)) return;
 
   switch (e.key) {
     case 'j':
@@ -2906,6 +2938,14 @@ document.addEventListener('keydown', (e) => {
     // r: manual refresh (poll for new vacancies right now)
     case 'r':
       poll();
+      break;
+    // g: scroll to top
+    case 'g':
+      scrollToTop();
+      break;
+    // q: toggle Stats panel
+    case 'q':
+      toggleStats();
       break;
   }
 });
