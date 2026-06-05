@@ -662,6 +662,40 @@
   .check-history-added { min-width: 28px; text-align: right; }
   .check-history-detail { flex: 1; }
 
+  /* Notes overview list in stats panel */
+  .stat-notes-list { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+  .stat-note-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 5px 8px; border-radius: 5px;
+    background: rgba(255,255,255,.015);
+    border-left: 2px solid var(--border-subtle);
+    transition: background .15s;
+  }
+  .stat-note-row:hover { background: rgba(255,255,255,.03); border-left-color: var(--accent); }
+  .stat-note-score {
+    flex-shrink: 0; font-size: 10px; font-weight: 590;
+    min-width: 28px; text-align: center;
+    padding: 1px 4px; border-radius: 3px;
+    background: rgba(255,255,255,.06); color: var(--muted);
+    margin-top: 1px;
+  }
+  .stat-note-score.high { background: rgba(16,185,129,.12); color: var(--green-bright); }
+  .stat-note-score.mid  { background: rgba(255,165, 2,.10); color: var(--yellow); }
+  .stat-note-score.low  { background: rgba(255, 71,87,.10); color: var(--red); }
+  .stat-note-body { flex: 1; min-width: 0; }
+  .stat-note-title {
+    font-size: 12px; font-weight: 510; color: var(--text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    display: block; text-decoration: none;
+  }
+  .stat-note-title:hover { color: var(--accent-bright); }
+  .stat-note-meta { display: flex; align-items: center; gap: 5px; margin-top: 2px; flex-wrap: wrap; }
+  .stat-note-text {
+    font-size: 11px; color: var(--muted); line-height: 1.45;
+    margin-top: 2px; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+
   /* Stats button icon inside filters */
   .filter-btn svg { width: 14px; height: 14px; }
 
@@ -2685,6 +2719,57 @@ function renderStats() {
     </div>`;
   }
 
+  // Notes overview card — list all vacancies with notes
+  let notesCardHtml = '';
+  if (noteCount > 0) {
+    // Collect vacancies with notes
+    const STATUS_PRIORITY = { 'Interview': 0, 'Offer': 0, 'Applied': 1, 'Rejected': 3 };
+    const notedVacancies = [];
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        const note = notesData[v.url];
+        if (!note) continue;
+        notedVacancies.push({ v, note, sectionName: s.name });
+      }
+    }
+    // Sort: Interview/Offer first, then Applied, then others (by score desc within group)
+    notedVacancies.sort((a, b) => {
+      const stA = statuses[a.v.url] || '';
+      const stB = statuses[b.v.url] || '';
+      const pA = STATUS_PRIORITY[stA] ?? 2;
+      const pB = STATUS_PRIORITY[stB] ?? 2;
+      if (pA !== pB) return pA - pB;
+      return (b.v.score ?? -1) - (a.v.score ?? -1);
+    });
+
+    const notesRowsHtml = notedVacancies.map(({ v, note }) => {
+      const sc = v.score !== null ? v.score : null;
+      const scLabel = sc !== null ? sc + '/10' : '?';
+      const scCls = sc === null ? '' : sc >= 6 ? 'high' : sc >= 4 ? 'mid' : 'low';
+      const st = statuses[v.url] || '';
+      const stColors = { Applied: 'var(--accent-bright)', Interview: 'var(--green)', Offer: 'var(--green-bright)', Rejected: 'var(--muted)' };
+      const stBadge = st ? `<span style="font-size:10px;color:${stColors[st]||'var(--muted)'};background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);padding:0 5px;border-radius:9999px;line-height:17px">${esc(st)}</span>` : '';
+      const noteShort = note.length > 120 ? esc(note.slice(0, 120)) + '…' : esc(note);
+      return `<div class="stat-note-row">
+        <div class="stat-note-score ${scCls}">${scLabel}</div>
+        <div class="stat-note-body">
+          <a class="stat-note-title" href="${escA(v.url)}" target="_blank" rel="noopener" title="${escA(v.title)}">${esc(v.title)}</a>
+          <div class="stat-note-meta">${stBadge}</div>
+          <div class="stat-note-text">${noteShort}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    notesCardHtml = `<div class="stat-card wide">
+      <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Нотатки (${noteCount})</span>
+        <span style="font-size:10px;color:var(--muted-deep);cursor:pointer" onclick="setFilter('notes');toggleStats()" title="Перейти до фільтру Нотатки">переглянути всі →</span>
+      </div>
+      <div class="stat-notes-list">${notesRowsHtml}</div>
+    </div>`;
+  }
+
   document.getElementById('statsPanel').innerHTML = `
     <div class="stats-panel">
       <div class="stat-card">
@@ -2760,6 +2845,7 @@ function renderStats() {
       </div>
       ${salaryCardHtml}
       ${ageCardHtml}
+      ${notesCardHtml}
       ${historyCardHtml}
     </div>`;
 }
