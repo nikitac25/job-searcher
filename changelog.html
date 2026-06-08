@@ -81,6 +81,15 @@
 </header>
 
 <article>
+  <h2>2026-06-08 03:15</h2>
+  <h3>Розумне визначення «застарілих» + бейдж віку pipeline-статусу у картках</h3>
+  <p><strong>Проблема/Можливість:</strong> У попередній реалізації функція <code>isStale(v)</code> позначала вакансію як «застарілу» якщо вона старша 14 днів — незалежно від pipeline-статусу. Це означало, що вакансія, на яку вже подано заявку (Applied), могла зникнути зі списку при увімкненому «Сховати застарілі». Також тег статусу (<code>Applied</code>, <code>Interview</code>, <code>Offer</code>) показував лише назву статусу без жодної інформації про те, скільки часу він активний — важлива деталь для своєчасного follow-up.</p>
+  <p><strong>Рішення:</strong> 1) <strong>Змінено <code>isStale(v)</code></strong>: тепер функція повертає <code>true</code> лише якщо вакансія старша 14 днів <em>і</em> не має жодного pipeline-статусу (<code>!getStatus(v.url)</code>). Вакансії зі статусами Applied/Interview/Offer більше не вважаються «застарілими» і не зникають при «Сховати застарілі». 2) <strong>Оновлено <code>statusTag(url)</code></strong>: для активних статусів (Applied, Interview, Offer) тепер відображається вік статусу поряд з назвою — наприклад <strong>«Applied <span style="color:var(--green-bright)">3д</span>»</strong> або <strong>«Applied <span style="color:var(--red)">18д</span>»</strong>. Колір вікового бейджу: зелений (< 7д), жовтий (7–13д), червоний (≥ 14д). Якщо статус виставлено сьогодні — показується «сьогодні». Для Rejected вік не показується (неактуально). Дані читаються з <code>getStatusDate(url, st)</code> — тих самих дат, що вже зберігаються у <code>vacancyStatusDates</code> localStorage.</p>
+  <p class="files-changed"><strong>Змінені файли:</strong> index.html</p>
+  <p class="verification"><strong>Перевірка:</strong> <code>venv/bin/python3 -c "import app; print('OK')"</code> — без помилок. Перевірено grep: <code>isStale</code> — нова умова з <code>&amp;&amp; !getStatus</code> присутня; <code>statusTag</code> — містить блок <code>if (st !== 'Rejected')</code> з обчисленням <code>days</code> та <code>ageColor</code>; функція <code>getStatusDate</code> викликається правильно.</p>
+</article>
+
+<article>
   <h2>2026-06-07 03:15</h2>
   <h3>Теплова карта активності за 4 тижні у Stats</h3>
   <p><strong>Проблема/Можливість:</strong> Статистика вже показувала кількість вакансій за категоріями (джерело, тип, формат), гістограму балів та вік вакансій. Проте не було жодного інструменту для відстеження активності пошуку роботи в часі — скільки вакансій додавалося щодня, у які дні було більше знахідок, чи є провали. Це важливо для розуміння ритму пошуку: чи bot регулярно додає нові вакансії, або є дні без результату.</p>

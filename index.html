@@ -1699,7 +1699,7 @@ function ageClass(days) {
   return 'tag-stale';
 }
 
-function isStale(v) { return getAgeDays(v) > 14; }
+function isStale(v) { return getAgeDays(v) > 14 && !getStatus(v.url); }
 
 function sectionAnchorId(name) {
   return 'sec_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_');
@@ -1775,6 +1775,15 @@ function statusTag(url) {
   const st = getStatus(url);
   if (!st) return '';
   const cls = st === 'Applied' ? 'tag-applied' : st === 'Interview' ? 'tag-interview' : st === 'Offer' ? 'tag-offer' : st === 'Rejected' ? 'tag-rejected' : '';
+  if (st !== 'Rejected') {
+    const d = getStatusDate(url, st);
+    if (d) {
+      const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+      const ageColor = days >= 14 ? 'var(--red)' : days >= 7 ? 'var(--yellow)' : 'var(--green-bright)';
+      const ageStr = days === 0 ? 'сьогодні' : `${days}д`;
+      return `<span class="tag ${cls}">${esc(st)}<span style="color:${ageColor};font-size:10px;margin-left:3px">${ageStr}</span></span>`;
+    }
+  }
   return `<span class="tag ${cls}">${esc(st)}</span>`;
 }
 
