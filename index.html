@@ -1058,7 +1058,7 @@
     <button class="view-btn active" id="viewCard" onclick="setView('card')" title="Картки"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/></svg></button>
     <button class="view-btn" id="viewList" onclick="setView('list')" title="Компактний список"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg></button>
   </div>
-  <input class="search-box" type="text" id="searchBox" placeholder="Пошук (кілька слів = AND)..." oninput="onSearch(this.value)">
+  <input class="search-box" type="text" id="searchBox" placeholder="Пошук: слова AND / OR / -виключити" oninput="onSearch(this.value)" title="AND: &quot;слово1 слово2&quot; — обидва мають бути присутні&#10;OR: &quot;слово1 OR слово2&quot; — хоча б одне&#10;Виключення: &quot;-слово&quot; — вакансії без цього слова">
 </div>
 <div class="active-filters-bar" id="activeFiltersBar"></div>
 </div><!-- /sticky-controls -->
@@ -1598,19 +1598,46 @@ function sortItems(items) {
   return sorted;
 }
 
+function parseSearchQuery(q) {
+  // Supports three modes:
+  //   word1 word2        → AND (all words must match)
+  //   word1 OR word2     → OR  (at least one group must match)
+  //   -word              → exclude (works in both modes)
+  if (!q) return { required: [], excluded: [], orGroups: [] };
+  if (/\bOR\b/i.test(q)) {
+    const parts = q.split(/\bOR\b/i);
+    const orGroups = [];
+    const excluded = [];
+    for (const part of parts) {
+      const tokens = part.trim().split(/\s+/).filter(Boolean);
+      const incl = tokens.filter(w => !w.startsWith('-'));
+      const excl = tokens.filter(w => w.startsWith('-') && w.length > 1).map(w => w.slice(1));
+      if (incl.length) orGroups.push(incl);
+      excluded.push(...excl);
+    }
+    return { required: [], excluded, orGroups };
+  }
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const required = tokens.filter(w => !w.startsWith('-'));
+  const excluded = tokens.filter(w => w.startsWith('-') && w.length > 1).map(w => w.slice(1));
+  return { required, excluded, orGroups: [] };
+}
+
 function matchesSearch(v) {
   if (!searchQuery) return true;
   const text = [v.title, v.type, v.summary, v.salary, v.remote, getNote(v.url)].join(' ').toLowerCase();
-  // AND logic: every word must match somewhere
-  const words = searchQuery.split(/\s+/).filter(Boolean);
-  return words.every(w => text.includes(w));
+  const { required, excluded, orGroups } = parseSearchQuery(searchQuery);
+  if (excluded.some(w => text.includes(w))) return false;
+  if (orGroups.length > 0) return orGroups.some(group => group.every(w => text.includes(w)));
+  return required.every(w => text.includes(w));
 }
 
 function highlightText(text, query) {
   if (!query) return esc(text);
-  const words = query.split(/\s+/).filter(Boolean);
+  const { required, orGroups } = parseSearchQuery(query);
+  const words = orGroups.length > 0 ? [...new Set(orGroups.flat())] : required;
   if (!words.length) return esc(text);
-  // Build regex matching any search word (case-insensitive)
+  // Build regex matching any highlight word (case-insensitive)
   const escaped = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const re = new RegExp('(' + escaped.join('|') + ')', 'gi');
   // Split text by capture group — odd indices are matches
@@ -3033,6 +3060,10 @@ function showKbHelp() {
     <div class="kb-row"><span class="kb-key">q</span><span class="kb-desc">Показати/сховати панель Stats</span></div>
     <div class="kb-row"><span class="kb-key">g</span><span class="kb-desc">Прокрутити на початок сторінки</span></div>
     <div class="kb-row"><span class="kb-key">/</span><span class="kb-desc">Фокус на пошук</span></div>
+    <div class="kb-row" style="padding-top:8px;margin-top:4px;border-top:1px solid var(--border-subtle)"><span style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Синтаксис пошуку</span></div>
+    <div class="kb-row"><span class="kb-key" style="min-width:64px;font-size:0.68rem">word1 word2</span><span class="kb-desc">AND — обидва мають бути присутні</span></div>
+    <div class="kb-row"><span class="kb-key" style="min-width:64px;font-size:0.68rem">w1 OR w2</span><span class="kb-desc">OR — хоча б одне слово</span></div>
+    <div class="kb-row"><span class="kb-key" style="min-width:64px;font-size:0.68rem">-слово</span><span class="kb-desc">Виключити вакансії з цим словом</span></div>
     <div class="kb-row"><span class="kb-key">?</span><span class="kb-desc">Показати цю довідку</span></div>
     <div class="kb-row"><span class="kb-key">Esc</span><span class="kb-desc">Закрити / зняти фокус</span></div>
   </div>`;
