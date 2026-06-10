@@ -1027,6 +1027,58 @@
     white-space: nowrap;
   }
   .clear-all-btn:hover { color: var(--text); text-decoration: underline; }
+
+  /* Top Picks banner */
+  .top-picks-card {
+    background: rgba(16,185,129,.04);
+    border: 1px solid rgba(16,185,129,.18);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .top-picks-hdr {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 8px;
+  }
+  .top-picks-label {
+    font-size: 12px; font-weight: 590; color: var(--green-bright);
+    letter-spacing: -0.1px;
+  }
+  .top-picks-count {
+    background: rgba(16,185,129,.15);
+    color: var(--green-bright);
+    font-size: 11px; font-weight: 590;
+    padding: 1px 6px; border-radius: 9999px;
+  }
+  .top-picks-seen-all {
+    margin-left: auto;
+    background: none; border: 1px solid rgba(255,255,255,.08);
+    color: var(--muted); font-size: 11px; font-weight: 510;
+    padding: 2px 8px; border-radius: 4px; cursor: pointer;
+    font-family: inherit; transition: all .15s;
+  }
+  .top-picks-seen-all:hover { border-color: rgba(16,185,129,.35); color: var(--green-bright); }
+  .top-pick-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(16,185,129,.07);
+  }
+  .top-pick-row:last-of-type { border-bottom: none; }
+  .top-pick-title {
+    flex: 1; min-width: 0;
+    color: var(--text); text-decoration: none;
+    font-size: 13px; font-weight: 510; letter-spacing: -0.15px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .top-pick-title:hover { color: var(--accent-hover); }
+  .top-pick-source {
+    font-size: 11px; color: var(--muted-deep);
+    flex-shrink: 0; white-space: nowrap;
+  }
+  .top-pick-more {
+    font-size: 11px; color: var(--muted); text-align: center;
+    padding-top: 6px; opacity: .8;
+  }
 </style>
 </head>
 <body>
@@ -1911,6 +1963,60 @@ function renderKanban() {
   updateBulkDeleteBtn();
 }
 
+function renderTopPicks() {
+  // Only show in "all" view — avoids cluttering filtered views
+  if (activeFilter !== 'all') return '';
+  const seen = getSeenUrls();
+  const topPicks = [];
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      if ((v.score ?? -1) >= 7 && !seen.has(v.url)) {
+        topPicks.push({ ...v, _section: s.name });
+      }
+    }
+  }
+  if (!topPicks.length) return '';
+  topPicks.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  const picks = topPicks.slice(0, 5);
+  const moreCount = topPicks.length - picks.length;
+
+  const rows = picks.map(v => {
+    const sc = v.score !== null ? v.score : '?';
+    return `<div class="top-pick-row">
+      <span class="score-badge ${scoreClass(v.score)}" style="width:26px;height:26px;font-size:11px;border-radius:6px;flex-shrink:0">${sc}</span>
+      <a class="top-pick-title" href="${escA(v.url)}" target="_blank" rel="noopener"
+        onclick="markSeen('${escA(v.url)}');renderFilters();updateTabTitle()"
+        title="${escA(v.title)}">${esc(v.title)}</a>
+      <span class="top-pick-source">${esc(v._section)}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="top-picks-card">
+    <div class="top-picks-hdr">
+      <span class="top-picks-label">🔥 Нові топ-вакансії</span>
+      <span class="top-picks-count">${topPicks.length}</span>
+      <button class="top-picks-seen-all" onclick="markTopPicksSeen()" title="Позначити всі топ-вакансії (score ≥ 7) як переглянуті">✓ Позначити переглянутими</button>
+    </div>
+    ${rows}
+    ${moreCount > 0 ? `<div class="top-pick-more">і ще ${moreCount}…</div>` : ''}
+  </div>`;
+}
+
+function markTopPicksSeen() {
+  const seen = getSeenUrls();
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      if ((v.score ?? -1) >= 7) seen.add(v.url);
+    }
+  }
+  localStorage.setItem('seenUrls', JSON.stringify([...seen]));
+  render();
+  renderFilters();
+  updateTabTitle();
+}
+
 function render() {
   if (activeFilter === 'pipeline') {
     renderKanban();
@@ -2005,6 +2111,9 @@ function render() {
     ).join('');
     html = `<div class="section-nav">${navPills}</div>` + html;
   }
+  // Prepend Top Picks banner (best unseen vacancies with score ≥ 7)
+  const _topPicksHtml = renderTopPicks();
+  if (_topPicksHtml) html = _topPicksHtml + html;
   app.innerHTML = html;
   // Restore max-height for open cards after DOM rebuild
   document.querySelectorAll('.card.open .card-panel').forEach(p => { p.style.maxHeight = 'none'; });
