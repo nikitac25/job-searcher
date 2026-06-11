@@ -1174,7 +1174,7 @@ const SKIP = ['Пошукові запити для самостійного м�
 
 let allData = [];
 let activeFilter = 'all';
-let activeSort = 'default';
+let activeSort = localStorage.getItem('activeSort') || 'default';
 let activeView = localStorage.getItem('viewMode') || 'card';
 let searchQuery = '';
 let openCards = new Set();
@@ -1183,7 +1183,7 @@ let hideStale = localStorage.getItem('hideStale') === '1';
 let filterRemote = localStorage.getItem('filterRemote') === '1';  // show only remote-friendly vacancies
 let filterSalary = localStorage.getItem('filterSalary') === '1';  // show only vacancies with salary specified
 let activeScoreExact = null;  // score filter from histogram bar click
-let scoreMin = 0;             // minimum score filter (0 = disabled; 7 = show score ≥7, etc.)
+let scoreMin = parseInt(localStorage.getItem('scoreMin') || '0', 10);  // minimum score filter (0 = disabled; 7 = show score ≥7, etc.)
 let filterType = '';  // normalized company type filter ('Product', 'Outsource/Agency', etc.)
 let filterSource = localStorage.getItem('filterSource') || '';  // source section filter ('Djinni', 'NoFluffJobs_bi', etc.)
 let filterWorkFormat = localStorage.getItem('filterWorkFormat') || '';  // work format filter ('Remote', 'Hybrid', 'Office')
@@ -1548,6 +1548,7 @@ function setFilter(f) { activeFilter = f; activeScoreExact = null; filterType = 
 
 function setSort(s) {
   activeSort = s;
+  localStorage.setItem('activeSort', s);
   document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.sort-btn[onclick="setSort('${s}')"]`).classList.add('active');
   render();
@@ -2477,6 +2478,7 @@ function setScoreFilter(score) {
 
 function setScoreMin(n) {
   scoreMin = scoreMin === n ? 0 : n;
+  localStorage.setItem('scoreMin', String(scoreMin));
   if (scoreMin > 0) activeScoreExact = null;  // exact filter and min filter are mutually exclusive
   document.querySelectorAll('.scoremin-btn').forEach(b => {
     b.classList.toggle('active', parseInt(b.dataset.min) === scoreMin);
@@ -2563,6 +2565,7 @@ function clearAllFilters() {
   localStorage.setItem('filterRemote', '0');
   localStorage.setItem('filterSalary', '0');
   localStorage.setItem('hideStale', '0');
+  localStorage.setItem('scoreMin', '0');
   const sb = document.getElementById('searchBox');
   if (sb) sb.value = '';
   updateRemoteFilterBtn();
@@ -3724,6 +3727,18 @@ if (hideStale) document.getElementById('hideStaleBtn').classList.add('toggled');
 if (filterRemote) document.getElementById('remoteFilterBtn').classList.add('toggled');
 // Restore salary filter toggle state
 if (filterSalary) document.getElementById('salaryFilterBtn').classList.add('toggled');
+// Restore sort preference (update button visual state; data isn't loaded yet so no render)
+if (activeSort !== 'default') {
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  const _sortBtn = document.querySelector(`.sort-btn[onclick="setSort('${activeSort}')"]`);
+  if (_sortBtn) _sortBtn.classList.add('active');
+}
+// Restore scoreMin preference (update button visual state)
+if (scoreMin > 0) {
+  document.querySelectorAll('.scoremin-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.min) === scoreMin);
+  });
+}
 
 // Sticky controls: add shadow when page is scrolled past the header
 (function() {

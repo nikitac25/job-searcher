@@ -81,6 +81,15 @@
 </header>
 
 <article>
+  <h2>2026-06-11 03:15</h2>
+  <h3>Збереження сортування і мінімального балу між сесіями (localStorage)</h3>
+  <p><strong>Проблема/Можливість:</strong> Параметри сортування (<code>Smart ↓</code>, <code>Score ↓</code>, <code>Date ↓</code>, <code>Salary ↓</code>) і фільтр мінімального балу (<code>≥6</code> / <code>≥7</code> / <code>≥8</code>) щоразу скидалися до <code>Default</code> та «без обмежень» після перезавантаження сторінки. Користувач, який регулярно переглядає лише вакансії з балом ≥7 у режимі <code>Smart ↓</code>, мусив клікати ці кнопки при кожному відкритті.</p>
+  <p><strong>Рішення:</strong> Обидва параметри тепер зберігаються в <code>localStorage</code> і автоматично відновлюються при наступному відкритті. <code>setSort()</code> зберігає вибране сортування під ключем <code>activeSort</code>, <code>setScoreMin()</code> — мінімальний бал під ключем <code>scoreMin</code>. При старті застосунок зчитує ці значення: <code>let activeSort = localStorage.getItem('activeSort') || 'default'</code> та <code>let scoreMin = parseInt(localStorage.getItem('scoreMin') || '0', 10)</code>. Стан кнопок у тулбарі відновлюється ще до першого завантаження даних — видима активна кнопка одразу відповідає збереженим налаштуванням. Кнопка «Скинути всі фільтри» (<code>clearAllFilters()</code>) також очищає збережений <code>scoreMin</code> в localStorage. Сортування навмисно не скидається кнопкою фільтрів — воно є постійним уподобанням, а не фільтром.</p>
+  <p class="files-changed"><strong>Змінені файли:</strong> index.html</p>
+  <p class="verification"><strong>Перевірка:</strong> <code>venv/bin/python3 -c "import app; print('OK')"</code> — без помилок. HTML-парсер Python — 0 помилок. Grep: <code>localStorage.getItem('activeSort')</code> — 1 входження (ініціалізація); <code>localStorage.setItem('activeSort'</code> — 1 входження (setSort); <code>localStorage.getItem('scoreMin')</code> — 1 входження (ініціалізація); <code>localStorage.setItem('scoreMin'</code> — 2 входження (setScoreMin + clearAllFilters).</p>
+</article>
+
+<article>
   <h2>2026-06-10 03:15</h2>
   <h3>Банер «Нові топ-вакансії» — миттєвий перегляд найкращих непрочитаних вакансій</h3>
   <p><strong>Проблема/Можливість:</strong> Щоразу відкриваючи застосунок, потрібно вручну шукати нові вакансії з високим балом — перемикатися між фільтрами «New» та «Hot», гортати списки по секціях. Це займає час і вимагає ментальних зусиль. Ідеально було б бачити одразу після відкриття: «ось що варто переглянути першим».</p>
