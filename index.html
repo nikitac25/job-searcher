@@ -2883,12 +2883,24 @@ function renderStats() {
       const tooltip = count > 0 ? dateStr + ': ' + count + '\u00a0вак.' + avgStr : dateStr;
       cells.push('<div style="width:100%;aspect-ratio:1;border-radius:2px;background:' + bg + scoreBorder + todayBorder + '" title="' + tooltip + '"></div>');
     }
+    // Weekday label row: column j maps to weekday of (today − (27−j) days)
+    // Column 0 = oldest (27 days ago), Column 6 = same weekday as today
+    const UK_DAYS = ['\u041d\u0434','\u041f\u043d','\u0412\u0442','\u0421\u0440','\u0427\u0442','\u041f\u0442','\u0421\u0431'];
+    const weekdayLabels = Array.from({length:7}, function(_, j) {
+      var dow = new Date(todayMs - (27 - j) * 86400000).getDay();
+      var isWeekend = (dow === 0 || dow === 6);
+      var color = isWeekend ? 'rgba(255,71,87,.45)' : 'rgba(255,255,255,.22)';
+      return '<div style="text-align:center;font-size:8px;line-height:10px;color:' + color + '">' + UK_DAYS[dow] + '</div>';
+    }).join('');
     activityCardHtml = '<div class="stat-card wide">'
       + '<div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">'
       + '<span>Активність за 4 тижні</span>'
       + '<span style="color:var(--muted-deep);font-size:10px">' + totalLast28 + '\u00a0вак. за 28 днів</span>'
       + '</div>'
-      + '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin:8px 0 4px">'
+      + '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin:6px 0 2px">'
+      + weekdayLabels
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin:0 0 4px">'
       + cells.join('')
       + '</div>'
       + '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted-deep);margin-top:1px">'
