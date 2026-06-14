@@ -3449,21 +3449,29 @@ function exportCSV() {
   const favs = getFavUrls();
   const notesData = getNotes();
   const allStatusDates = getStatusDates();
-  const rows = [['Source', 'Title', 'URL', 'Score', 'Type', 'Salary', 'Remote', 'Date', 'Status', 'Pipeline', 'Applied Date', 'Interview Date', 'Favorite', 'Note']];
+  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null
+    || scoreMin > 0 || !!filterType || filterRemote || filterSalary
+    || !!filterSource || !!filterWorkFormat || !!filterPipelineStatus || hideStale;
+  const rows = [['Source', 'Title', 'URL', 'Score', 'Summary', 'Type', 'Salary', 'Remote', 'Date', 'Status', 'Pipeline', 'Applied Date', 'Interview Date', 'Favorite', 'Note']];
 
+  const csvEsc = (s) => {
+    s = (s || '').replace(/"/g, '""');
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+  };
+
+  let exportCount = 0;
   for (const section of allData) {
     if (SKIP.includes(section.name)) continue;
+    if (filterSource && section.name !== filterSource) continue;
     for (const v of section.items) {
-      const csvEsc = (s) => {
-        s = (s || '').replace(/"/g, '""');
-        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
-      };
+      if (isFiltered && (!passFilter(v) || !matchesSearch(v) || (hideStale && isStale(v)))) continue;
       const urlDates = allStatusDates[v.url] || {};
       rows.push([
         csvEsc(section.name),
         csvEsc(v.title),
         csvEsc(v.url),
         v.score !== null ? v.score : '',
+        csvEsc(v.summary),
         csvEsc(v.type),
         csvEsc(v.salary),
         csvEsc(v.remote),
@@ -3475,17 +3483,27 @@ function exportCSV() {
         favs.has(v.url) ? 'yes' : '',
         csvEsc(notesData[v.url] || ''),
       ].join(','));
+      exportCount++;
     }
   }
 
   const csv = rows.join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
+  const blobUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `vacancies-${new Date().toISOString().slice(0,10)}.csv`;
+  a.href = blobUrl;
+  const suffix = isFiltered ? '-filtered' : '';
+  a.download = `vacancies${suffix}-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(blobUrl);
+
+  // Brief button feedback
+  const btn = document.querySelector('.action-btn[onclick="exportCSV()"]');
+  if (btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M20 6 9 17l-5-5"/></svg> ${exportCount} рядків`;
+    setTimeout(() => { btn.innerHTML = orig; }, 2500);
+  }
 }
 
 // localStorage backup / restore
