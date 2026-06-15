@@ -3061,6 +3061,75 @@ function renderStats() {
     </div>`;
   }
 
+  // Week-over-week comparison card
+  let weeklyCardHtml = '';
+  {
+    // this week: 0–6 days ago; last week: 7–13 days ago
+    const weekThis = { count: 0, scoreSum: 0, scored: 0, highQuality: 0 };
+    const weekLast = { count: 0, scoreSum: 0, scored: 0, highQuality: 0 };
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        const age = getAgeDays(v);
+        if (age < 0) continue;
+        const week = age <= 6 ? weekThis : age <= 13 ? weekLast : null;
+        if (!week) continue;
+        week.count++;
+        if (v.score !== null) {
+          week.scored++;
+          week.scoreSum += v.score;
+          if (v.score >= 7) week.highQuality++;
+        }
+      }
+    }
+    const avgThis = weekThis.scored ? (weekThis.scoreSum / weekThis.scored).toFixed(1) : null;
+    const avgLast = weekLast.scored ? (weekLast.scoreSum / weekLast.scored).toFixed(1) : null;
+
+    function _wDiff(curr, prev) {
+      const d = curr - prev;
+      if (d > 0) return `<span style="color:var(--green-bright)">↑ +${d}</span>`;
+      if (d < 0) return `<span style="color:var(--red)">↓ ${d}</span>`;
+      return `<span style="color:var(--muted-deep)">= без змін</span>`;
+    }
+    function _wDiffF(curr, prev) {
+      if (curr === null || prev === null) return `<span style="color:var(--muted-deep)">—</span>`;
+      const d = parseFloat(curr) - parseFloat(prev);
+      if (d > 0.05) return `<span style="color:var(--green-bright)">↑ +${d.toFixed(1)}</span>`;
+      if (d < -0.05) return `<span style="color:var(--red)">↓ ${d.toFixed(1)}</span>`;
+      return `<span style="color:var(--muted-deep)">≈ без змін</span>`;
+    }
+
+    const prevBadge = (n, isScore) =>
+      `<span style="font-size:10px;color:var(--muted-deep);margin-top:1px">vs ${isScore ? (n || '—') : n} мин.</span>`;
+
+    weeklyCardHtml = `<div class="stat-card wide">
+      <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Тиждень до тижня</span>
+        <span style="color:var(--muted-deep);font-size:10px">0–6д vs 7–13д</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:600;color:var(--text);letter-spacing:-0.5px">${weekThis.count}</div>
+          <div style="font-size:11px;margin:2px 0">${_wDiff(weekThis.count, weekLast.count)}</div>
+          ${prevBadge(weekLast.count, false)}
+          <div style="font-size:10px;color:var(--muted-deep);margin-top:3px">вакансій</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:600;color:var(--text);letter-spacing:-0.5px">${avgThis || '—'}</div>
+          <div style="font-size:11px;margin:2px 0">${_wDiffF(avgThis, avgLast)}</div>
+          ${prevBadge(avgLast, true)}
+          <div style="font-size:10px;color:var(--muted-deep);margin-top:3px">середній бал</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:600;color:${weekThis.highQuality > 0 ? 'var(--green-bright)' : 'var(--text)'};letter-spacing:-0.5px">${weekThis.highQuality}</div>
+          <div style="font-size:11px;margin:2px 0">${_wDiff(weekThis.highQuality, weekLast.highQuality)}</div>
+          ${prevBadge(weekLast.highQuality, false)}
+          <div style="font-size:10px;color:var(--muted-deep);margin-top:3px">якісних ≥7</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
   document.getElementById('statsPanel').innerHTML = `
     <div class="stats-panel">
       <div class="stat-card">
@@ -3137,6 +3206,7 @@ function renderStats() {
       ${salaryCardHtml}
       ${ageCardHtml}
       ${activityCardHtml}
+      ${weeklyCardHtml}
       ${notesCardHtml}
       ${historyCardHtml}
     </div>`;
