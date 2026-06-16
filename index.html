@@ -1184,7 +1184,7 @@ let filterRemote = localStorage.getItem('filterRemote') === '1';  // show only r
 let filterSalary = localStorage.getItem('filterSalary') === '1';  // show only vacancies with salary specified
 let activeScoreExact = null;  // score filter from histogram bar click
 let scoreMin = parseInt(localStorage.getItem('scoreMin') || '0', 10);  // minimum score filter (0 = disabled; 7 = show score ≥7, etc.)
-let filterType = '';  // normalized company type filter ('Product', 'Outsource/Agency', etc.)
+let filterType = localStorage.getItem('filterType') || '';  // normalized company type filter ('Product', 'Outsource/Agency', etc.)
 let filterSource = localStorage.getItem('filterSource') || '';  // source section filter ('Djinni', 'NoFluffJobs_bi', etc.)
 let filterWorkFormat = localStorage.getItem('filterWorkFormat') || '';  // work format filter ('Remote', 'Hybrid', 'Office')
 let filterPipelineStatus = '';  // pipeline status filter ('Applied', 'Interview', 'Offer', 'Rejected')
@@ -1544,7 +1544,7 @@ function renderFilters() {
   renderActiveFiltersBar();
 }
 
-function setFilter(f) { activeFilter = f; activeScoreExact = null; filterType = ''; renderFilters(); render(); }
+function setFilter(f) { activeFilter = f; activeScoreExact = null; filterType = ''; localStorage.setItem('filterType', ''); renderFilters(); render(); }
 
 function setSort(s) {
   activeSort = s;
@@ -1558,6 +1558,7 @@ function onSearch(q) { searchQuery = q.toLowerCase().trim(); render(); renderAct
 
 function quickFilterType(type) {
   filterType = filterType === type ? '' : type;
+  localStorage.setItem('filterType', filterType);
   renderStats();
   render();
   renderActiveFiltersBar();
@@ -2560,6 +2561,7 @@ function clearAllFilters() {
   hideStale = false;
   searchQuery = '';
   document.querySelectorAll('.scoremin-btn').forEach(b => b.classList.remove('active'));
+  localStorage.setItem('filterType', '');
   localStorage.setItem('filterSource', '');
   localStorage.setItem('filterWorkFormat', '');
   localStorage.setItem('filterRemote', '0');
@@ -3130,6 +3132,52 @@ function renderStats() {
     </div>`;
   }
 
+  // Top Technologies card: keywords in high-score (≥6) vacancies
+  let topTechCardHtml = '';
+  {
+    const TECH_KW = [
+      'Looker','LookML','BigQuery','dbt','Power BI','Tableau','SQL','Python',
+      'Spark','Snowflake','Redshift','Airflow','Metabase','Superset','Databricks',
+      'Qlik','MicroStrategy','GoodData','AWS','GCP','Azure','Kafka','Elasticsearch',
+      'SaaS','Fintech','ETL','API'
+    ];
+    const techCount = {};
+    let hotTotal = 0;
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        if (v.score !== null && v.score >= 6) {
+          hotTotal++;
+          const text = ((v.summary || '') + ' ' + (v.title || '')).toLowerCase();
+          for (const kw of TECH_KW) {
+            if (text.includes(kw.toLowerCase())) {
+              techCount[kw] = (techCount[kw] || 0) + 1;
+            }
+          }
+        }
+      }
+    }
+    const sorted = Object.entries(techCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    if (hotTotal >= 2 && sorted.length >= 2) {
+      const maxCnt = sorted[0][1];
+      const techHtml = sorted.map(([kw, cnt]) => {
+        const pct = Math.round(cnt / hotTotal * 100);
+        const barW = Math.round(cnt / maxCnt * 100);
+        return `<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+          <span style="font-size:11.5px;color:var(--text-secondary);min-width:88px;flex-shrink:0">${esc(kw)}</span>
+          <div style="flex:1;background:rgba(255,255,255,.05);border-radius:3px;height:5px;overflow:hidden">
+            <div style="width:${barW}%;height:100%;background:var(--accent-bright);border-radius:3px;transition:width .3s"></div>
+          </div>
+          <span style="font-size:10.5px;color:var(--muted);min-width:42px;text-align:right">${cnt} · ${pct}%</span>
+        </div>`;
+      }).join('');
+      topTechCardHtml = `<div class="stat-card wide">
+        <div class="stat-label">Топ-технології у якісних вакансіях <span style="color:var(--muted-deep);font-weight:400;font-size:10px">score ≥6 · ${hotTotal} вак.</span></div>
+        <div style="margin-top:10px">${techHtml}</div>
+      </div>`;
+    }
+  }
+
   document.getElementById('statsPanel').innerHTML = `
     <div class="stats-panel">
       <div class="stat-card">
@@ -3207,6 +3255,7 @@ function renderStats() {
       ${ageCardHtml}
       ${activityCardHtml}
       ${weeklyCardHtml}
+      ${topTechCardHtml}
       ${notesCardHtml}
       ${historyCardHtml}
     </div>`;
@@ -3580,7 +3629,7 @@ function exportCSV() {
 const _LS_BACKUP_KEYS = [
   'seenUrls', 'favUrls', 'vacancyStatuses', 'vacancyStatusDates', 'vacancyNotes',
   'collapsedSections', 'hideStale', 'filterRemote', 'filterSalary', 'filterSource',
-  'filterWorkFormat', 'viewMode'
+  'filterWorkFormat', 'filterType', 'viewMode'
 ];
 
 function exportUserData() {
