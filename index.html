@@ -2597,13 +2597,15 @@ function renderStats() {
       const st = statuses[v.url];
       if (st && pipeline.hasOwnProperty(st)) pipeline[st]++;
       if (needsFollowUp(v.url)) followupCount++;
-      if (!sources[s.name]) sources[s.name] = { count: 0, sum: 0, scored: 0 };
+      if (!sources[s.name]) sources[s.name] = { count: 0, sum: 0, scored: 0, high: 0, mid: 0, low: 0 };
       sources[s.name].count++;
       if (v.score === null) { none++; }
       else {
         scored++; sumScore += v.score;
         sources[s.name].sum += v.score; sources[s.name].scored++;
-        if (v.score >= 6) high++; else if (v.score >= 4) mid++; else low++;
+        if (v.score >= 6) { high++; sources[s.name].high++; }
+        else if (v.score >= 4) { mid++; sources[s.name].mid++; }
+        else { low++; sources[s.name].low++; }
       }
     }
   }
@@ -2654,6 +2656,50 @@ function renderStats() {
       ? 'cursor:pointer;background:rgba(94,106,210,.15);border-color:rgba(113,112,255,.3);color:var(--accent-bright)'
       : 'cursor:pointer';
     sourcesHtml += `<span class="source-chip" onclick="quickFilterSource('${escA(name)}')" style="${srcChipStyle}" title="Клік — фільтрувати за джерелом">${esc(name)}<b>${data.count}</b>${avgBadge}</span>`;
+  }
+
+  // Source quality distribution card (horizontal bars per source)
+  let sourceQualityCardHtml = '';
+  {
+    const srcEntries = Object.entries(sources).sort((a, b) => b[1].count - a[1].count);
+    if (srcEntries.length >= 2) {
+      const rowsHtml = srcEntries.map(([name, d]) => {
+        const noScore = d.count - d.scored;
+        const barW = (n) => d.count ? (n / d.count * 100).toFixed(1) : 0;
+        const srcAvg = d.scored ? (d.sum / d.scored).toFixed(1) : null;
+        const avgColor = srcAvg === null ? 'var(--muted-deep)'
+          : srcAvg >= 6 ? 'var(--green-bright)' : srcAvg >= 4 ? 'var(--yellow)' : 'var(--red)';
+        const isActive = filterSource === name;
+        const rowBg = isActive ? 'background:rgba(94,106,210,.06);border-radius:4px;' : '';
+        const nameColor = isActive ? 'var(--accent-bright)' : 'var(--text-secondary)';
+        const segs = [
+          { w: barW(d.high),   col: 'var(--green-bright)',        ttl: `Якісні (≥6): ${d.high}` },
+          { w: barW(d.mid),    col: 'var(--yellow)',              ttl: `OK (4–5): ${d.mid}` },
+          { w: barW(d.low),    col: 'var(--red)',                 ttl: `Низькі (<4): ${d.low}` },
+          { w: barW(noScore),  col: 'rgba(255,255,255,0.07)',     ttl: `Без оцінки: ${noScore}` },
+        ].filter(s => parseFloat(s.w) > 0);
+        const segsHtml = segs.map(s => `<div style="width:${s.w}%;background:${s.col};height:100%;border-radius:1px" title="${s.ttl}"></div>`).join('');
+        return `<div style="display:flex;align-items:center;gap:8px;padding:4px 6px;cursor:pointer;${rowBg}" onclick="quickFilterSource('${escA(name)}')" title="Клік — фільтрувати за джерелом">
+          <div style="flex:0 0 130px;font-size:11px;color:${nameColor};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>
+          <div style="flex:1;height:7px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;display:flex;gap:1px">${segsHtml}</div>
+          <div style="flex:0 0 64px;text-align:right;font-size:10.5px;color:var(--muted-deep);white-space:nowrap">${d.count} вак. <span style="color:${avgColor}">${srcAvg !== null ? '★' + srcAvg : '—'}</span></div>
+        </div>`;
+      }).join('');
+      const qualLegend = `<div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+        <span style="font-size:10px;color:var(--muted-deep);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;background:var(--green-bright);border-radius:1px;display:inline-block;flex-shrink:0"></span>Якісні ≥6</span>
+        <span style="font-size:10px;color:var(--muted-deep);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;background:var(--yellow);border-radius:1px;display:inline-block;flex-shrink:0"></span>OK 4–5</span>
+        <span style="font-size:10px;color:var(--muted-deep);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;background:var(--red);border-radius:1px;display:inline-block;flex-shrink:0"></span>Низькі &lt;4</span>
+        <span style="font-size:10px;color:var(--muted-deep);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;background:rgba(255,255,255,0.07);border-radius:1px;display:inline-block;flex-shrink:0"></span>Без оцінки</span>
+      </div>`;
+      sourceQualityCardHtml = `<div class="stat-card wide">
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Якість за джерелами</span>
+          ${filterSource ? `<span class="score-filter-badge" onclick="quickFilterSource('${escA(filterSource)}')" title="Скинути фільтр"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ${esc(filterSource)}</span>` : `<span style="font-size:10px;color:var(--muted-deep)">клік → фільтр</span>`}
+        </div>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:1px">${rowsHtml}</div>
+        ${qualLegend}
+      </div>`;
+    }
   }
 
   // Company type breakdown (normalized)
@@ -3237,6 +3283,7 @@ function renderStats() {
         </div>
         <div class="sources-list">${sourcesHtml}</div>
       </div>
+      ${sourceQualityCardHtml}
       <div class="stat-card wide">
         <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
           <span>Типи компаній</span>
