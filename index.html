@@ -2969,6 +2969,77 @@ function renderStats() {
       + '</div>';
   }
 
+  // 14-day score trend sparkline: avg score per day
+  let scoreTrendCardHtml = '';
+  {
+    const TREND_DAYS = 14;
+    const trendMap = {}; // daysAgo → {sum, count}
+    const todayMsTrend = new Date().setHours(0, 0, 0, 0);
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        if (v.score === null) continue;
+        const dt = parseDateToObj(v);
+        if (!dt) continue;
+        dt.setHours(0, 0, 0, 0);
+        const diff = Math.round((todayMsTrend - dt.getTime()) / 86400000);
+        if (diff >= 0 && diff < TREND_DAYS) {
+          if (!trendMap[diff]) trendMap[diff] = { sum: 0, count: 0 };
+          trendMap[diff].sum += v.score;
+          trendMap[diff].count++;
+        }
+      }
+    }
+    const daysWithData = Object.values(trendMap).filter(d => d.count > 0).length;
+    if (daysWithData >= 3) {
+      const TREND_BAR_H = 36;
+      let trendTotalScored = 0, trendTotalSum = 0;
+      const trendBars = [];
+      for (let i = TREND_DAYS - 1; i >= 0; i--) {
+        const cellDate = new Date(todayMsTrend - i * 86400000);
+        const dd = String(cellDate.getDate()).padStart(2, '0');
+        const mm = String(cellDate.getMonth() + 1).padStart(2, '0');
+        const dateStr = dd + '.' + mm;
+        const d = trendMap[i];
+        if (d && d.count > 0) {
+          trendTotalScored += d.count;
+          trendTotalSum += d.sum;
+          const avg = d.sum / d.count;
+          const h = Math.max(3, Math.round(avg / 10 * TREND_BAR_H));
+          const col = avg >= 7 ? 'var(--green-bright)' : avg >= 5 ? 'var(--yellow)' : 'var(--red)';
+          const avgFmt = avg.toFixed(1);
+          trendBars.push(`<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;cursor:default" title="${dateStr}: avg\u00a0${avgFmt} (${d.count}\u00a0вак.)">
+            <span style="font-size:8px;color:var(--muted-deep);line-height:10px;margin-bottom:1px">${avgFmt}</span>
+            <div style="width:100%;height:${h}px;background:${col};border-radius:2px 2px 1px 1px;opacity:0.9"></div>
+          </div>`);
+        } else {
+          trendBars.push(`<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;cursor:default" title="${dateStr}">
+            <div style="width:100%;height:2px;background:rgba(255,255,255,0.06);border-radius:1px"></div>
+          </div>`);
+        }
+      }
+      const trendOverallAvg = trendTotalScored ? (trendTotalSum / trendTotalScored).toFixed(1) : '—';
+      scoreTrendCardHtml = `<div class="stat-card wide">
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Тренд якості за 14 днів</span>
+          <span style="color:var(--muted-deep);font-size:10px">avg ${trendOverallAvg} · ${daysWithData} активних днів</span>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:2px;height:${TREND_BAR_H + 14}px;margin:8px 0 2px;padding-bottom:2px;border-bottom:1px solid var(--border-subtle)">
+          ${trendBars.join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted-deep);margin-top:3px">
+          <span>\u221214 днів</span>
+          <div class="score-bar-legend" style="margin:0;font-size:9px">
+            <span><span class="legend-dot" style="background:var(--green-bright)"></span>avg\u00a0\u22657</span>
+            <span><span class="legend-dot" style="background:var(--yellow)"></span>5\u20136</span>
+            <span><span class="legend-dot" style="background:var(--red)"></span>&lt;5</span>
+          </div>
+          <span>сьогодні</span>
+        </div>
+      </div>`;
+    }
+  }
+
   // Pre-compute check history card HTML
   let historyCardHtml = '';
   if (historyData.length) {
@@ -3301,6 +3372,7 @@ function renderStats() {
       ${salaryCardHtml}
       ${ageCardHtml}
       ${activityCardHtml}
+      ${scoreTrendCardHtml}
       ${weeklyCardHtml}
       ${topTechCardHtml}
       ${notesCardHtml}
