@@ -3295,6 +3295,57 @@ function renderStats() {
     }
   }
 
+  // Unactioned top vacancies card: seen, score>=7, no status, no fav, no note
+  let unactionedCardHtml = '';
+  {
+    const seenSet = getSeenUrls();
+    const unacted = [];
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        if (
+          v.score !== null && v.score >= 7 &&
+          seenSet.has(v.url) &&
+          !statuses[v.url] &&
+          !favs.has(v.url) &&
+          !notesData[v.url]
+        ) {
+          unacted.push(v);
+        }
+      }
+    }
+    unacted.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+    if (unacted.length >= 2) {
+      const MAX_SHOW = 5;
+      const shown = unacted.slice(0, MAX_SHOW);
+      const extra = unacted.length - MAX_SHOW;
+      const rowsHtml = shown.map(v => {
+        const sc = v.score;
+        const scCls = sc >= 8 ? 'high' : 'mid';
+        const days = getAgeDays(v);
+        const ageBadge = days >= 0 ? `<span style="font-size:10px;color:var(--muted-deep)">${ageLabel(days)} тому</span>` : '';
+        return `<div class="stat-note-row">
+          <div class="stat-note-score ${scCls}">${sc}/10</div>
+          <div class="stat-note-body">
+            <a class="stat-note-title" href="${escA(v.url)}" target="_blank" rel="noopener" title="${escA(v.title)}">${esc(v.title)}</a>
+            <div class="stat-note-meta">${ageBadge}
+              <span style="font-size:10px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="toggleFav('${escA(v.url)}')" title="Додати в обране">★ обрати</span>
+              <span style="font-size:10px;color:var(--accent-bright);cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="setStatus('${escA(v.url)}','Applied')" title="Позначити як Applied">→ Applied</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      const extraNote = extra > 0 ? `<div style="font-size:11px;color:var(--muted-deep);padding:4px 0 0 2px">і ще ${extra}…</div>` : '';
+      unactionedCardHtml = `<div class="stat-card wide">
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Переглянуто, але без дії <span style="color:var(--muted-deep);font-weight:400;font-size:10px">score ≥7 · не подано · не обрано</span></span>
+          <span style="font-size:10px;color:var(--yellow)">${unacted.length} вак.</span>
+        </div>
+        <div class="stat-notes-list" style="margin-top:8px">${rowsHtml}${extraNote}</div>
+      </div>`;
+    }
+  }
+
   document.getElementById('statsPanel').innerHTML = `
     <div class="stats-panel">
       <div class="stat-card">
@@ -3375,6 +3426,7 @@ function renderStats() {
       ${scoreTrendCardHtml}
       ${weeklyCardHtml}
       ${topTechCardHtml}
+      ${unactionedCardHtml}
       ${notesCardHtml}
       ${historyCardHtml}
     </div>`;
