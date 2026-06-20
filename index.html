@@ -451,6 +451,89 @@
   .back-to-top:hover { background: rgba(255,255,255,0.08); color: var(--text); }
   .back-to-top svg { width: 16px; height: 16px; }
 
+  /* Global scratch pad */
+  .scratch-pad-btn {
+    position: fixed; bottom: 92px; right: 16px;
+    width: 36px; height: 36px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 50%; color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 15;
+    box-shadow: 0 2px 10px rgba(0,0,0,.4);
+    transition: background .15s, color .15s, border-color .15s;
+    font-family: inherit;
+  }
+  .scratch-pad-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+  .scratch-pad-btn.has-content { border-color: rgba(255,165,2,.4); color: var(--yellow); }
+  .scratch-pad-btn svg { width: 15px; height: 15px; }
+  .scratch-pad-panel {
+    position: fixed; bottom: 136px; right: 16px;
+    width: 285px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 6px 28px rgba(0,0,0,.55);
+    z-index: 20;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: spSlideIn .15s ease-out;
+  }
+  @keyframes spSlideIn {
+    from { opacity: 0; transform: translateY(8px) scale(.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .scratch-pad-panel.visible { display: flex; }
+  .scratch-pad-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 10px 6px;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 11px; font-weight: 590; color: var(--muted);
+    letter-spacing: 0.5px; text-transform: uppercase;
+    user-select: none;
+  }
+  .scratch-pad-header-left {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .scratch-pad-header-left svg { width: 12px; height: 12px; opacity: .6; }
+  .scratch-pad-close {
+    background: none; border: none; color: var(--muted-deep);
+    cursor: pointer; padding: 0; line-height: 1;
+    font-family: inherit; display: flex; align-items: center;
+    transition: color .15s;
+  }
+  .scratch-pad-close:hover { color: var(--text); }
+  .scratch-pad-close svg { width: 13px; height: 13px; }
+  .scratch-pad-textarea {
+    width: 100%; min-height: 130px; max-height: 280px;
+    resize: vertical;
+    background: transparent; border: none;
+    color: var(--text-secondary); font-size: 12.5px;
+    line-height: 1.6; padding: 9px 10px;
+    font-family: inherit;
+    outline: none;
+    scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.08) transparent;
+  }
+  .scratch-pad-textarea::placeholder { color: var(--muted-deep); font-style: italic; }
+  .scratch-pad-footer {
+    padding: 4px 10px 6px;
+    font-size: 10.5px; color: var(--muted-deep);
+    border-top: 1px solid var(--border-subtle);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .scratch-pad-chars { opacity: .7; }
+  .scratch-pad-saved {
+    opacity: 0; font-size: 10px; color: var(--green-bright);
+    transition: opacity .3s;
+  }
+  .scratch-pad-saved.show { opacity: 1; }
+  .scratch-pad-clear {
+    background: none; border: none;
+    color: var(--muted-deep); font-size: 10.5px;
+    cursor: pointer; padding: 0; font-family: inherit;
+    transition: color .15s;
+  }
+  .scratch-pad-clear:hover { color: var(--red); }
+
   /* Keyboard shortcuts overlay */
   .kb-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.85);
@@ -1146,6 +1229,26 @@
 <button class="back-to-top" id="backToTopBtn" onclick="scrollToTop()" title="Вгору (g)">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
 </button>
+<button class="scratch-pad-btn" id="scratchPadBtn" onclick="toggleScratchPad()" title="Нотатник (p)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+</button>
+<div class="scratch-pad-panel" id="scratchPadPanel">
+  <div class="scratch-pad-header">
+    <div class="scratch-pad-header-left">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Нотатник
+    </div>
+    <button class="scratch-pad-close" onclick="toggleScratchPad()" title="Закрити (p або Esc)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </div>
+  <textarea class="scratch-pad-textarea" id="scratchPadText" placeholder="Думки, нагадування, плани...&#10;&#10;Наприклад:&#10;• Написати в Company X до понеділка&#10;• Оновити LinkedIn&#10;• Фолоу-ап щодо вакансії Y" oninput="onScratchPadInput(this)"></textarea>
+  <div class="scratch-pad-footer">
+    <span class="scratch-pad-chars" id="scratchPadChars">0 символів</span>
+    <span class="scratch-pad-saved" id="scratchPadSaved">збережено</span>
+    <button class="scratch-pad-clear" onclick="clearScratchPad()" title="Очистити нотатник">Очистити</button>
+  </div>
+</div>
 <div class="status-bar" id="statusBar">
   <span class="dot dot-ok"></span> Підключено
   <span class="kb-hint" onclick="showKbHelp()" title="Keyboard shortcuts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M8 12h.001"/><path d="M12 12h.001"/><path d="M16 12h.001"/><path d="M7 16h10"/></svg></span>
@@ -3493,6 +3596,7 @@ function showKbHelp() {
     <div class="kb-row"><span class="kb-key">v</span><span class="kb-desc">Перемкнути вигляд (картки/список)</span></div>
     <div class="kb-row"><span class="kb-key">h</span><span class="kb-desc">Сховати/показати застарілі</span></div>
     <div class="kb-row"><span class="kb-key">q</span><span class="kb-desc">Показати/сховати панель Stats</span></div>
+    <div class="kb-row"><span class="kb-key">p</span><span class="kb-desc">Відкрити/закрити нотатник</span></div>
     <div class="kb-row"><span class="kb-key">g</span><span class="kb-desc">Прокрутити на початок сторінки</span></div>
     <div class="kb-row"><span class="kb-key">/</span><span class="kb-desc">Фокус на пошук</span></div>
     <div class="kb-row" style="padding-top:8px;margin-top:4px;border-top:1px solid var(--border-subtle)"><span style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Синтаксис пошуку</span></div>
@@ -3517,7 +3621,7 @@ document.addEventListener('keydown', (e) => {
   }
 
   const cards = getVisibleCards();
-  const noCardsOk = new Set(['?', 'q', 'g', 'c', 'r', 'v', 'h', '/', '1','2','3','4','5','6','7','8']);
+  const noCardsOk = new Set(['?', 'q', 'g', 'p', 'c', 'r', 'v', 'h', '/', '1','2','3','4','5','6','7','8']);
   if (!cards.length && !noCardsOk.has(e.key)) return;
 
   switch (e.key) {
@@ -3588,9 +3692,13 @@ document.addEventListener('keydown', (e) => {
       showKbHelp();
       break;
     case 'Escape':
-      // Clear focus
-      cards.forEach(c => c.classList.remove('kb-focus'));
-      focusIdx = -1;
+      // Close scratch pad if open, else clear card focus
+      if (_scratchPadOpen) {
+        toggleScratchPad();
+      } else {
+        cards.forEach(c => c.classList.remove('kb-focus'));
+        focusIdx = -1;
+      }
       break;
     // Number keys: switch active filter
     case '1': setFilter('all'); break;
@@ -3618,6 +3726,10 @@ document.addEventListener('keydown', (e) => {
     // q: toggle Stats panel
     case 'q':
       toggleStats();
+      break;
+    // p: toggle global scratch pad
+    case 'p':
+      toggleScratchPad();
       break;
   }
 });
@@ -3800,7 +3912,7 @@ function exportCSV() {
 const _LS_BACKUP_KEYS = [
   'seenUrls', 'favUrls', 'vacancyStatuses', 'vacancyStatusDates', 'vacancyNotes',
   'collapsedSections', 'hideStale', 'filterRemote', 'filterSalary', 'filterSource',
-  'filterWorkFormat', 'filterType', 'viewMode'
+  'filterWorkFormat', 'filterType', 'viewMode', 'globalNote'
 ];
 
 function exportUserData() {
@@ -4043,6 +4155,70 @@ async function triggerAnalyzeBatch() {
     }
   }, 600000);
 }
+
+// ============================================================
+// GLOBAL SCRATCH PAD
+// ============================================================
+let _scratchPadOpen = false;
+let _scratchSaveTimer = null;
+
+function _initScratchPad() {
+  const saved = localStorage.getItem('globalNote') || '';
+  const ta = document.getElementById('scratchPadText');
+  if (ta) ta.value = saved;
+  _updateScratchPadChars(saved.length);
+  _updateScratchPadBtn(saved);
+}
+
+function _updateScratchPadBtn(text) {
+  if (text === undefined) text = localStorage.getItem('globalNote') || '';
+  const btn = document.getElementById('scratchPadBtn');
+  if (btn) btn.classList.toggle('has-content', text.trim().length > 0);
+}
+
+function _updateScratchPadChars(len) {
+  const el = document.getElementById('scratchPadChars');
+  if (!el) return;
+  const rem = len % 10;
+  const suffix = len === 1 ? 'символ' : (rem >= 2 && rem <= 4 && !(len >= 12 && len <= 14)) ? 'символи' : 'символів';
+  el.textContent = len + ' ' + suffix;
+}
+
+function toggleScratchPad() {
+  _scratchPadOpen = !_scratchPadOpen;
+  const panel = document.getElementById('scratchPadPanel');
+  if (panel) panel.classList.toggle('visible', _scratchPadOpen);
+  if (_scratchPadOpen) {
+    const ta = document.getElementById('scratchPadText');
+    if (ta) setTimeout(() => ta.focus(), 60);
+  }
+}
+
+function onScratchPadInput(ta) {
+  _updateScratchPadChars(ta.value.length);
+  clearTimeout(_scratchSaveTimer);
+  _scratchSaveTimer = setTimeout(() => {
+    localStorage.setItem('globalNote', ta.value);
+    _updateScratchPadBtn(ta.value);
+    // Show "збережено" flash
+    const saved = document.getElementById('scratchPadSaved');
+    if (saved) {
+      saved.classList.add('show');
+      setTimeout(() => saved.classList.remove('show'), 1200);
+    }
+  }, 500);
+}
+
+function clearScratchPad() {
+  if (!(localStorage.getItem('globalNote') || '').trim()) return;
+  if (!confirm('Очистити нотатник? Це незворотньо видалить всі записи.')) return;
+  const ta = document.getElementById('scratchPadText');
+  if (ta) { ta.value = ''; _updateScratchPadChars(0); }
+  localStorage.removeItem('globalNote');
+  _updateScratchPadBtn('');
+}
+
+_initScratchPad();
 
 load();
 loadStatus();
