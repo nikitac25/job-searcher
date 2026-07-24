@@ -124,6 +124,33 @@
   .search-box:focus { border-color: var(--accent-bright); }
 
   /* Section */
+  /* Section jump navigation bar */
+  .section-nav {
+    display: flex; gap: 4px;
+    margin: 8px 0 0;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .section-nav::-webkit-scrollbar { display: none; }
+  .section-nav-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(255,255,255,.025);
+    border: 1px solid rgba(255,255,255,.07);
+    color: var(--muted); font-size: 11.5px; font-weight: 510;
+    padding: 3px 10px; border-radius: 9999px;
+    white-space: nowrap; cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+    font-family: inherit;
+  }
+  .section-nav-pill:hover {
+    background: rgba(255,255,255,.06);
+    color: var(--text); border-color: rgba(255,255,255,.12);
+  }
+  .section-nav-pill .snp-count {
+    color: var(--muted-deep); font-weight: 400; font-size: 11px;
+  }
+
   .section { margin-top: 24px; }
   .section-hdr {
     font-size: 13px; font-weight: 510; color: var(--muted);
@@ -164,6 +191,13 @@
     box-shadow: rgba(0,0,0,0.25) 0px 0px 0px 1px;
   }
   .card:hover { background: rgba(255,255,255,0.045); }
+  /* Score-based left accent bar (inset shadow — no layout shift) */
+  .card.sl-best { box-shadow: rgba(0,0,0,0.25) 0px 0px 0px 1px, inset 3px 0 0 var(--green-bright); }
+  .card.sl-hot  { box-shadow: rgba(0,0,0,0.25) 0px 0px 0px 1px, inset 3px 0 0 var(--green); }
+  .card.sl-ok   { box-shadow: rgba(0,0,0,0.25) 0px 0px 0px 1px, inset 3px 0 0 rgba(255,165,2,.7); }
+  .card.sl-low  { box-shadow: rgba(0,0,0,0.25) 0px 0px 0px 1px, inset 3px 0 0 rgba(255,71,87,.45); }
+  .card.sl-best:hover { background: rgba(16,185,129,.04); }
+  .card.sl-hot:hover  { background: rgba(39,166,68,.04); }
 
   .card-header {
     padding: 12px;
@@ -203,6 +237,13 @@
     display: flex; gap: 5px; flex-wrap: wrap;
     margin-top: 5px; font-size: 12px; color: var(--muted);
   }
+  .card-summary-preview {
+    font-size: 12px; color: var(--muted-deep); margin-top: 5px;
+    line-height: 1.45; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .card.open .card-summary-preview,
+  .list-view .card-summary-preview { display: none; }
   .tag {
     background: transparent; padding: 0 8px;
     border-radius: 9999px; white-space: nowrap; font-weight: 510;
@@ -216,6 +257,9 @@
   .card.stale:hover { opacity: .85; }
   .tag-inactive { color: var(--red); border-color: rgba(255,71,87,.2); }
   .tag-salary { color: var(--green-bright); border-color: rgba(16,185,129,.25); }
+  .tag-remote-full { color: var(--green-bright); border-color: rgba(16,185,129,.25); }
+  .tag-remote-hybrid { color: var(--yellow); border-color: rgba(255,165,2,.2); }
+  .tag-remote-office { color: var(--muted-deep); border-color: rgba(255,255,255,.06); }
   .tag-new {
     color: var(--accent-bright); border-color: rgba(113,112,255,.3);
     font-weight: 590; animation: pulse 2s ease-in-out infinite;
@@ -251,6 +295,7 @@
   .tag-interview { color: var(--green-bright); border-color: rgba(16,185,129,.3); }
   .tag-offer { color: var(--green-bright); border-color: rgba(16,185,129,.4); font-weight: 590; }
   .tag-rejected { color: var(--muted-deep); border-color: rgb(45,47,53); text-decoration: line-through; }
+  .tag-followup { color: var(--yellow); border-color: rgba(255,165,2,.3); }
 
   /* Status selector */
   .status-sel {
@@ -389,6 +434,105 @@
     color: var(--muted-deep); font-size: 0.7rem;
     margin-left: 6px; opacity: .85;
   }
+
+  /* Back to top button */
+  .back-to-top {
+    position: fixed; bottom: 48px; right: 16px;
+    width: 36px; height: 36px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 50%; color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 15;
+    box-shadow: 0 2px 10px rgba(0,0,0,.4);
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s, background .15s, color .15s;
+  }
+  .back-to-top.visible { opacity: 1; pointer-events: auto; }
+  .back-to-top:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+  .back-to-top svg { width: 16px; height: 16px; }
+
+  /* Global scratch pad */
+  .scratch-pad-btn {
+    position: fixed; bottom: 92px; right: 16px;
+    width: 36px; height: 36px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 50%; color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 15;
+    box-shadow: 0 2px 10px rgba(0,0,0,.4);
+    transition: background .15s, color .15s, border-color .15s;
+    font-family: inherit;
+  }
+  .scratch-pad-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+  .scratch-pad-btn.has-content { border-color: rgba(255,165,2,.4); color: var(--yellow); }
+  .scratch-pad-btn svg { width: 15px; height: 15px; }
+  .scratch-pad-panel {
+    position: fixed; bottom: 136px; right: 16px;
+    width: 285px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 6px 28px rgba(0,0,0,.55);
+    z-index: 20;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: spSlideIn .15s ease-out;
+  }
+  @keyframes spSlideIn {
+    from { opacity: 0; transform: translateY(8px) scale(.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .scratch-pad-panel.visible { display: flex; }
+  .scratch-pad-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 10px 6px;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 11px; font-weight: 590; color: var(--muted);
+    letter-spacing: 0.5px; text-transform: uppercase;
+    user-select: none;
+  }
+  .scratch-pad-header-left {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .scratch-pad-header-left svg { width: 12px; height: 12px; opacity: .6; }
+  .scratch-pad-close {
+    background: none; border: none; color: var(--muted-deep);
+    cursor: pointer; padding: 0; line-height: 1;
+    font-family: inherit; display: flex; align-items: center;
+    transition: color .15s;
+  }
+  .scratch-pad-close:hover { color: var(--text); }
+  .scratch-pad-close svg { width: 13px; height: 13px; }
+  .scratch-pad-textarea {
+    width: 100%; min-height: 130px; max-height: 280px;
+    resize: vertical;
+    background: transparent; border: none;
+    color: var(--text-secondary); font-size: 12.5px;
+    line-height: 1.6; padding: 9px 10px;
+    font-family: inherit;
+    outline: none;
+    scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.08) transparent;
+  }
+  .scratch-pad-textarea::placeholder { color: var(--muted-deep); font-style: italic; }
+  .scratch-pad-footer {
+    padding: 4px 10px 6px;
+    font-size: 10.5px; color: var(--muted-deep);
+    border-top: 1px solid var(--border-subtle);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .scratch-pad-chars { opacity: .7; }
+  .scratch-pad-saved {
+    opacity: 0; font-size: 10px; color: var(--green-bright);
+    transition: opacity .3s;
+  }
+  .scratch-pad-saved.show { opacity: 1; }
+  .scratch-pad-clear {
+    background: none; border: none;
+    color: var(--muted-deep); font-size: 10.5px;
+    cursor: pointer; padding: 0; font-family: inherit;
+    transition: color .15s;
+  }
+  .scratch-pad-clear:hover { color: var(--red); }
 
   /* Keyboard shortcuts overlay */
   .kb-overlay {
@@ -616,6 +760,52 @@
     font-weight: 590;
     margin-left: 3px;
   }
+  /* Check history list in stats panel */
+  .check-history-list { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+  .check-history-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 6px 4px 8px; border-radius: 4px;
+    background: rgba(255,255,255,.015);
+    border-left: 2px solid var(--border);
+  }
+  .check-history-date { color: var(--muted); font-size: 11px; min-width: 84px; font-family: ui-monospace, "SF Mono", monospace; }
+  .check-history-added { min-width: 28px; text-align: right; }
+  .check-history-detail { flex: 1; }
+
+  /* Notes overview list in stats panel */
+  .stat-notes-list { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+  .stat-note-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 5px 8px; border-radius: 5px;
+    background: rgba(255,255,255,.015);
+    border-left: 2px solid var(--border-subtle);
+    transition: background .15s;
+  }
+  .stat-note-row:hover { background: rgba(255,255,255,.03); border-left-color: var(--accent); }
+  .stat-note-score {
+    flex-shrink: 0; font-size: 10px; font-weight: 590;
+    min-width: 28px; text-align: center;
+    padding: 1px 4px; border-radius: 3px;
+    background: rgba(255,255,255,.06); color: var(--muted);
+    margin-top: 1px;
+  }
+  .stat-note-score.high { background: rgba(16,185,129,.12); color: var(--green-bright); }
+  .stat-note-score.mid  { background: rgba(255,165, 2,.10); color: var(--yellow); }
+  .stat-note-score.low  { background: rgba(255, 71,87,.10); color: var(--red); }
+  .stat-note-body { flex: 1; min-width: 0; }
+  .stat-note-title {
+    font-size: 12px; font-weight: 510; color: var(--text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    display: block; text-decoration: none;
+  }
+  .stat-note-title:hover { color: var(--accent-bright); }
+  .stat-note-meta { display: flex; align-items: center; gap: 5px; margin-top: 2px; flex-wrap: wrap; }
+  .stat-note-text {
+    font-size: 11px; color: var(--muted); line-height: 1.45;
+    margin-top: 2px; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+
   /* Stats button icon inside filters */
   .filter-btn svg { width: 14px; height: 14px; }
 
@@ -682,12 +872,31 @@
   .check-info-btn:hover { color: var(--accent-bright); }
   .check-info-btn svg { width: 11px; height: 11px; }
 
+  /* Copy vacancy button */
+  .panel-copy-row {
+    display: flex; justify-content: flex-end;
+    margin-top: 10px; padding-top: 8px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .copy-btn {
+    background: none; border: 1px solid rgba(255,255,255,0.08);
+    color: var(--muted); font-size: 0.7rem; cursor: pointer;
+    padding: 3px 10px; border-radius: 5px;
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: all .15s; font-family: inherit;
+  }
+  .copy-btn:hover { color: var(--text); border-color: rgba(255,255,255,.15); background: rgba(255,255,255,.04); }
+  .copy-btn.copied { color: var(--green-bright); border-color: rgba(16,185,129,.3); }
+  .copy-btn svg { width: 12px; height: 12px; }
+
   /* Check now button spin animation */
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
   #checkNowIcon.spinning { animation: spin 1s linear infinite; }
   #checkNowBtn.checking { opacity: .7; pointer-events: none; }
+  #analyzeBatchIcon.spinning { animation: spin 1s linear infinite; }
+  #analyzeBatchBtn.analyzing { opacity: .7; pointer-events: none; }
 
   /* View toggle */
   .view-toggle {
@@ -873,6 +1082,86 @@
   @media (min-width: 1440px) {
     .sticky-controls { margin-left: -48px; margin-right: -48px; padding: 0 48px; }
   }
+
+  /* Active filter chips bar */
+  .active-filters-bar {
+    display: none;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0 0 8px;
+    align-items: center;
+  }
+  .filter-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: rgba(94,106,210,.12); border: 1px solid rgba(113,112,255,.25);
+    color: var(--accent-bright); font-size: 12px; font-weight: 510;
+    padding: 2px 6px 2px 10px; border-radius: 9999px; cursor: pointer;
+    transition: background .15s; white-space: nowrap;
+    font-family: inherit;
+  }
+  .filter-chip:hover { background: rgba(94,106,210,.22); }
+  .filter-chip svg { width: 10px; height: 10px; opacity: .7; flex-shrink: 0; }
+  .filter-chip:hover svg { opacity: 1; }
+  .clear-all-btn {
+    background: none; border: none;
+    color: var(--muted); font-size: 12px; cursor: pointer;
+    padding: 2px 8px; border-radius: 9999px;
+    transition: color .15s; font-family: inherit;
+    white-space: nowrap;
+  }
+  .clear-all-btn:hover { color: var(--text); text-decoration: underline; }
+
+  /* Top Picks banner */
+  .top-picks-card {
+    background: rgba(16,185,129,.04);
+    border: 1px solid rgba(16,185,129,.18);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .top-picks-hdr {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 8px;
+  }
+  .top-picks-label {
+    font-size: 12px; font-weight: 590; color: var(--green-bright);
+    letter-spacing: -0.1px;
+  }
+  .top-picks-count {
+    background: rgba(16,185,129,.15);
+    color: var(--green-bright);
+    font-size: 11px; font-weight: 590;
+    padding: 1px 6px; border-radius: 9999px;
+  }
+  .top-picks-seen-all {
+    margin-left: auto;
+    background: none; border: 1px solid rgba(255,255,255,.08);
+    color: var(--muted); font-size: 11px; font-weight: 510;
+    padding: 2px 8px; border-radius: 4px; cursor: pointer;
+    font-family: inherit; transition: all .15s;
+  }
+  .top-picks-seen-all:hover { border-color: rgba(16,185,129,.35); color: var(--green-bright); }
+  .top-pick-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(16,185,129,.07);
+  }
+  .top-pick-row:last-of-type { border-bottom: none; }
+  .top-pick-title {
+    flex: 1; min-width: 0;
+    color: var(--text); text-decoration: none;
+    font-size: 13px; font-weight: 510; letter-spacing: -0.15px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .top-pick-title:hover { color: var(--accent-hover); }
+  .top-pick-source {
+    font-size: 11px; color: var(--muted-deep);
+    flex-shrink: 0; white-space: nowrap;
+  }
+  .top-pick-more {
+    font-size: 11px; color: var(--muted); text-align: center;
+    padding-top: 6px; opacity: .8;
+  }
 </style>
 </head>
 <body>
@@ -893,13 +1182,20 @@
     <button class="sort-btn active" onclick="setSort('default')">Default</button>
     <button class="sort-btn" onclick="setSort('score')">Score ↓</button>
     <button class="sort-btn" onclick="setSort('date')">Date ↓</button>
+    <button class="sort-btn" onclick="setSort('salary')">Salary ↓</button>
+    <button class="sort-btn" onclick="setSort('smart')" title="Рейтинг зі штрафом за вік: Score − 1 за кожні 7 днів (макс −3). Нові топ-вакансії — вгорі.">Smart ↓</button>
+    <span class="sort-label" style="margin-left:6px;border-left:1px solid rgba(255,255,255,0.08);padding-left:10px">Min:</span>
+    <button class="sort-btn scoremin-btn" data-min="6" onclick="setScoreMin(6)" title="Показати тільки вакансії з балом ≥6">≥6</button>
+    <button class="sort-btn scoremin-btn" data-min="7" onclick="setScoreMin(7)" title="Показати тільки вакансії з балом ≥7">≥7</button>
+    <button class="sort-btn scoremin-btn" data-min="8" onclick="setScoreMin(8)" title="Показати тільки вакансії з балом ≥8">≥8</button>
   </div>
   <div class="view-toggle">
     <button class="view-btn active" id="viewCard" onclick="setView('card')" title="Картки"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/></svg></button>
     <button class="view-btn" id="viewList" onclick="setView('list')" title="Компактний список"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg></button>
   </div>
-  <input class="search-box" type="text" id="searchBox" placeholder="Пошук (кілька слів = AND)..." oninput="onSearch(this.value)">
+  <input class="search-box" type="text" id="searchBox" placeholder="Пошук: слова AND / OR / -виключити" oninput="onSearch(this.value)" title="AND: &quot;слово1 слово2&quot; — обидва мають бути присутні&#10;OR: &quot;слово1 OR слово2&quot; — хоча б одне&#10;Виключення: &quot;-слово&quot; — вакансії без цього слова">
 </div>
+<div class="active-filters-bar" id="activeFiltersBar"></div>
 </div><!-- /sticky-controls -->
 <div id="statsPanel" style="display:none"></div>
 <div class="actions-row">
@@ -907,8 +1203,13 @@
   <button class="action-btn hidden" id="markAllSeenBtn" onclick="markAllSeen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M20 6 9 17l-5-5"/></svg> Позначити переглянутими</button>
   <button class="action-btn" id="expandCollapseBtn" onclick="toggleExpandAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg> Розгорнути всі</button>
   <button class="action-btn" onclick="exportCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Експорт CSV</button>
+  <button class="action-btn" onclick="exportUserData()" title="Зберегти нотатки, обране, статуси pipeline та налаштування у JSON-файл"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg> Backup</button>
+  <button class="action-btn" onclick="importUserData()" title="Відновити нотатки, обране, статуси pipeline з раніше збереженого JSON-файлу"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg> Restore</button>
   <button class="action-btn" id="hideStaleBtn" onclick="toggleHideStale()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> Сховати застарілі</button>
+  <button class="action-btn" id="remoteFilterBtn" onclick="toggleRemoteFilter()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> Тільки Remote</button>
+  <button class="action-btn" id="salaryFilterBtn" onclick="toggleSalaryFilter()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg> З зарплатою</button>
   <button class="action-btn hidden" id="bulkDelBtn" onclick="bulkDelete()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Видалити видимі</button>
+  <button class="action-btn hidden" id="analyzeBatchBtn" onclick="triggerAnalyzeBatch()"><svg id="analyzeBatchIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/></svg> Аналізувати незаналізовані</button>
 </div>
 <div id="app"></div>
 
@@ -924,6 +1225,29 @@
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
   <span id="toastMsg"></span>
   <button class="toast-dismiss" onclick="event.stopPropagation(); dismissToast()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+</div>
+<button class="back-to-top" id="backToTopBtn" onclick="scrollToTop()" title="Вгору (g)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+</button>
+<button class="scratch-pad-btn" id="scratchPadBtn" onclick="toggleScratchPad()" title="Нотатник (p)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+</button>
+<div class="scratch-pad-panel" id="scratchPadPanel">
+  <div class="scratch-pad-header">
+    <div class="scratch-pad-header-left">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Нотатник
+    </div>
+    <button class="scratch-pad-close" onclick="toggleScratchPad()" title="Закрити (p або Esc)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </div>
+  <textarea class="scratch-pad-textarea" id="scratchPadText" placeholder="Думки, нагадування, плани...&#10;&#10;Наприклад:&#10;• Написати в Company X до понеділка&#10;• Оновити LinkedIn&#10;• Фолоу-ап щодо вакансії Y" oninput="onScratchPadInput(this)"></textarea>
+  <div class="scratch-pad-footer">
+    <span class="scratch-pad-chars" id="scratchPadChars">0 символів</span>
+    <span class="scratch-pad-saved" id="scratchPadSaved">збережено</span>
+    <button class="scratch-pad-clear" onclick="clearScratchPad()" title="Очистити нотатник">Очистити</button>
+  </div>
 </div>
 <div class="status-bar" id="statusBar">
   <span class="dot dot-ok"></span> Підключено
@@ -953,17 +1277,25 @@ const SKIP = ['Пошукові запити для самостійного м�
 
 let allData = [];
 let activeFilter = 'all';
-let activeSort = 'default';
+let activeSort = localStorage.getItem('activeSort') || 'default';
 let activeView = localStorage.getItem('viewMode') || 'card';
 let searchQuery = '';
 let openCards = new Set();
 let pageTitle = 'Вакансії';
 let hideStale = localStorage.getItem('hideStale') === '1';
+let filterRemote = localStorage.getItem('filterRemote') === '1';  // show only remote-friendly vacancies
+let filterSalary = localStorage.getItem('filterSalary') === '1';  // show only vacancies with salary specified
 let activeScoreExact = null;  // score filter from histogram bar click
+let scoreMin = parseInt(localStorage.getItem('scoreMin') || '0', 10);  // minimum score filter (0 = disabled; 7 = show score ≥7, etc.)
+let filterType = localStorage.getItem('filterType') || '';  // normalized company type filter ('Product', 'Outsource/Agency', etc.)
+let filterSource = localStorage.getItem('filterSource') || '';  // source section filter ('Djinni', 'NoFluffJobs_bi', etc.)
+let filterWorkFormat = localStorage.getItem('filterWorkFormat') || '';  // work format filter ('Remote', 'Hybrid', 'Office')
+let filterPipelineStatus = '';  // pipeline status filter ('Applied', 'Interview', 'Offer', 'Rejected')
 let lastCheckTs = null;      // raw ISO datetime string of last check
 let lastCheckAdded = null;  // number added in last check (null = unknown)
 let lastCheckSources = {};  // {source_key: count}
 let lastCheckErrors = [];   // list of error strings
+let historyData = [];        // [{date, added, skipped, found}, ...] from /api/history
 
 function _computeAgo(isoStr) {
   if (!isoStr) return '';
@@ -1056,13 +1388,59 @@ function getStatuses() {
 }
 function setStatus(url, status) {
   const statuses = getStatuses();
-  if (status === 'Status') delete statuses[url]; else statuses[url] = status;
+  if (status === 'Status') {
+    delete statuses[url];
+    clearStatusDates(url);
+  } else {
+    statuses[url] = status;
+    // Record the date for this status milestone (only if not already recorded)
+    if (status !== 'Status' && !getStatusDate(url, status)) {
+      saveStatusDate(url, status);
+    }
+  }
   localStorage.setItem('vacancyStatuses', JSON.stringify(statuses));
   renderFilters();
   render();
   if (statsVisible) renderStats();
 }
 function getStatus(url) { return getStatuses()[url] || ''; }
+
+// Pipeline status date tracking
+function getStatusDates() {
+  try { return JSON.parse(localStorage.getItem('vacancyStatusDates') || '{}'); }
+  catch { return {}; }
+}
+function getStatusDate(url, status) {
+  const d = getStatusDates();
+  return (d[url] || {})[status] || '';
+}
+function saveStatusDate(url, status) {
+  const d = getStatusDates();
+  if (!d[url]) d[url] = {};
+  d[url][status] = new Date().toISOString().slice(0, 10);
+  localStorage.setItem('vacancyStatusDates', JSON.stringify(d));
+}
+function clearStatusDates(url) {
+  const d = getStatusDates();
+  delete d[url];
+  localStorage.setItem('vacancyStatusDates', JSON.stringify(d));
+}
+function formatStatusDate(isoDate) {
+  if (!isoDate) return '';
+  const [y, m, day] = isoDate.split('-');
+  return `${day}.${m}.${y.slice(2)}`;
+}
+function getStatusMilestonesHtml(url) {
+  const cur = getStatus(url);
+  if (!cur) return '';
+  const ORDER = ['Applied', 'Interview', 'Offer', 'Rejected'];
+  const COLORS = { Applied: 'var(--accent-bright)', Interview: 'var(--green)', Offer: 'var(--green-bright)', Rejected: 'rgba(255,71,87,.7)' };
+  const parts = ORDER
+    .filter(s => getStatusDate(url, s))
+    .map(s => `<span style="color:${COLORS[s]};font-size:11px">${s}: <b style="color:var(--text-secondary)">${formatStatusDate(getStatusDate(url, s))}</b></span>`);
+  if (!parts.length) return '';
+  return `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:5px;padding:5px 0;border-top:1px solid var(--border-subtle)">${parts.join('')}</div>`;
+}
 
 // Notes tracking via localStorage
 function getNotes() {
@@ -1079,6 +1457,15 @@ function saveNote(url, text) {
   if (statsVisible) renderStats();
 }
 function hasNote(url) { return !!getNote(url); }
+
+// Follow-up: status=Applied AND applied date ≥7 days ago with no progression
+function needsFollowUp(url) {
+  if (getStatus(url) !== 'Applied') return false;
+  const appliedDate = getStatusDate(url, 'Applied');
+  if (!appliedDate) return false;
+  const daysSince = Math.floor((Date.now() - new Date(appliedDate).getTime()) / 86400000);
+  return daysSince >= 7;
+}
 
 function startEditNote(url) {
   const card = document.querySelector(`.card[data-url="${CSS.escape(url)}"]`) || document.querySelector(`.card[data-url="${url}"]`);
@@ -1139,7 +1526,10 @@ async function load() {
     render();
     updateMarkAllSeenBtn();
     updateHideStaleBtn();
+    updateRemoteFilterBtn();
+    updateSalaryFilterBtn();
     updateBulkDeleteBtn();
+    updateAnalyzeBatchBtn();
     updateTabTitle();
     if (statsVisible) renderStats();
     status('ok');
@@ -1170,6 +1560,9 @@ async function poll() {
         render();
         updateMarkAllSeenBtn();
         updateHideStaleBtn();
+        updateRemoteFilterBtn();
+        updateSalaryFilterBtn();
+        updateAnalyzeBatchBtn();
         updateTabTitle();
         if (statsVisible) renderStats();
       }
@@ -1199,6 +1592,9 @@ function applyPendingData() {
     render();
     updateMarkAllSeenBtn();
     updateHideStaleBtn();
+    updateRemoteFilterBtn();
+    updateSalaryFilterBtn();
+    updateAnalyzeBatchBtn();
     updateTabTitle();
     if (statsVisible) renderStats();
   }
@@ -1206,17 +1602,22 @@ function applyPendingData() {
 }
 
 function renderFilters() {
-  const scores = {all:0, hot:0, ok:0, skip:0, new:0, fav:0, notes:0, applied:0, interview:0, offer:0, rejected:0};
+  const scores = {all:0, hot:0, ok:0, skip:0, new:0, fav:0, notes:0, applied:0, interview:0, offer:0, rejected:0, recent:0, followup:0};
   const favs = getFavUrls();
   const statuses = getStatuses();
   const notes = getNotes();
   for (const s of allData) {
     if (SKIP.includes(s.name)) continue;
+    if (filterSource && s.name !== filterSource) continue;
     for (const v of s.items) {
+      if (filterWorkFormat && normalizeRemote(v.remote) !== filterWorkFormat) continue;
+      if (filterPipelineStatus && (statuses[v.url] || '') !== filterPipelineStatus) continue;
       scores.all++;
       if (isNew(v.url)) scores.new++;
       if (favs.has(v.url)) scores.fav++;
       if (notes[v.url]) scores.notes++;
+      if (needsFollowUp(v.url)) scores.followup++;
+      const _age = getAgeDays(v); if (_age >= 0 && _age <= 7) scores.recent++;
       const st = statuses[v.url];
       if (st === 'Applied') scores.applied++;
       else if (st === 'Interview') scores.interview++;
@@ -1235,24 +1636,59 @@ function renderFilters() {
     fb('all','Всі',scores.all) +
     fb('fav','Fav',scores.fav) +
     fb('new','New',scores.new) +
+    fb('recent','Recent',scores.recent) +
     fb('hot','Hot',scores.hot) +
     fb('ok','OK',scores.ok) +
     fb('skip','Skip',scores.skip) +
     fb('notes','Notes',scores.notes) +
+    (scores.followup > 0 ? fb('followup','↩ Follow-up',scores.followup) : '') +
     fb('pipeline','Pipeline',pipelineCount) +
     `<button class="filter-btn ${statsVisible?'active':''}" onclick="toggleStats()">${IC.barChart} Stats</button>`;
+  renderActiveFiltersBar();
 }
 
-function setFilter(f) { activeFilter = f; activeScoreExact = null; renderFilters(); render(); }
+function setFilter(f) { activeFilter = f; activeScoreExact = null; filterType = ''; localStorage.setItem('filterType', ''); renderFilters(); render(); }
 
 function setSort(s) {
   activeSort = s;
+  localStorage.setItem('activeSort', s);
   document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.sort-btn[onclick="setSort('${s}')"]`).classList.add('active');
   render();
 }
 
-function onSearch(q) { searchQuery = q.toLowerCase().trim(); render(); }
+function onSearch(q) { searchQuery = q.toLowerCase().trim(); render(); renderActiveFiltersBar(); }
+
+function quickFilterType(type) {
+  filterType = filterType === type ? '' : type;
+  localStorage.setItem('filterType', filterType);
+  renderStats();
+  render();
+  renderActiveFiltersBar();
+}
+
+function quickFilterSource(src) {
+  filterSource = filterSource === src ? '' : src;
+  localStorage.setItem('filterSource', filterSource);
+  renderFilters();
+  render();
+  if (statsVisible) renderStats();
+}
+
+function quickFilterWorkFormat(fmt) {
+  filterWorkFormat = filterWorkFormat === fmt ? '' : fmt;
+  localStorage.setItem('filterWorkFormat', filterWorkFormat);
+  renderFilters();
+  render();
+  if (statsVisible) renderStats();
+}
+
+function quickFilterPipelineStatus(status) {
+  filterPipelineStatus = filterPipelineStatus === status ? '' : status;
+  renderFilters();
+  render();
+  if (statsVisible) renderStats();
+}
 
 function setView(mode) {
   activeView = mode;
@@ -1272,6 +1708,23 @@ function parseDate(v) {
   return 0;
 }
 
+function parseSalaryNum(v) {
+  const s = (v.salary || '').trim();
+  if (!s || s === 'Не вказана' || s === 'Не вказано' || s === 'Не вказано.') return -1;
+  // Collapse spaces inside numbers (e.g. "18 480" → "18480")
+  const collapsed = s.replace(/(\d)\s+(\d)/g, '$1$2');
+  const numMatch = collapsed.match(/[\d]+(?:[.,][\d]+)?/);
+  if (!numMatch) return -1;
+  const num = parseFloat(numMatch[0].replace(',', '.'));
+  if (isNaN(num) || num <= 0) return -1;
+  const isHourly = /\/h\b|\/год|per\s*hour/i.test(s);
+  let mult = 1; // PLN base
+  if (/USD|\$/.test(s)) mult = 4.0;
+  else if (/EUR|€/.test(s)) mult = 4.2;
+  else if (/UAH|грн/.test(s)) mult = 0.1;
+  return num * mult * (isHourly ? 160 : 1);
+}
+
 function sortItems(items) {
   if (activeSort === 'default') return items;
   const sorted = [...items];
@@ -1279,23 +1732,69 @@ function sortItems(items) {
     sorted.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
   } else if (activeSort === 'date') {
     sorted.sort((a, b) => parseDate(b) - parseDate(a));
+  } else if (activeSort === 'salary') {
+    sorted.sort((a, b) => {
+      const sa = parseSalaryNum(a);
+      const sb = parseSalaryNum(b);
+      if (sa === -1 && sb === -1) return 0;
+      if (sa === -1) return 1;
+      if (sb === -1) return -1;
+      return sb - sa;
+    });
+  } else if (activeSort === 'smart') {
+    // Freshness-weighted score: penalises old vacancies by 1pt per 7 days, capped at 3pts.
+    // Vacancies with no score go to the bottom; no date means no penalty.
+    const smartScore = v => {
+      if (v.score === null) return -999;
+      const age = Math.max(getAgeDays(v), 0);
+      const penalty = Math.min(age / 7, 3);
+      return v.score - penalty;
+    };
+    sorted.sort((a, b) => smartScore(b) - smartScore(a));
   }
   return sorted;
+}
+
+function parseSearchQuery(q) {
+  // Supports three modes:
+  //   word1 word2        → AND (all words must match)
+  //   word1 OR word2     → OR  (at least one group must match)
+  //   -word              → exclude (works in both modes)
+  if (!q) return { required: [], excluded: [], orGroups: [] };
+  if (/\bOR\b/i.test(q)) {
+    const parts = q.split(/\bOR\b/i);
+    const orGroups = [];
+    const excluded = [];
+    for (const part of parts) {
+      const tokens = part.trim().split(/\s+/).filter(Boolean);
+      const incl = tokens.filter(w => !w.startsWith('-'));
+      const excl = tokens.filter(w => w.startsWith('-') && w.length > 1).map(w => w.slice(1));
+      if (incl.length) orGroups.push(incl);
+      excluded.push(...excl);
+    }
+    return { required: [], excluded, orGroups };
+  }
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const required = tokens.filter(w => !w.startsWith('-'));
+  const excluded = tokens.filter(w => w.startsWith('-') && w.length > 1).map(w => w.slice(1));
+  return { required, excluded, orGroups: [] };
 }
 
 function matchesSearch(v) {
   if (!searchQuery) return true;
   const text = [v.title, v.type, v.summary, v.salary, v.remote, getNote(v.url)].join(' ').toLowerCase();
-  // AND logic: every word must match somewhere
-  const words = searchQuery.split(/\s+/).filter(Boolean);
-  return words.every(w => text.includes(w));
+  const { required, excluded, orGroups } = parseSearchQuery(searchQuery);
+  if (excluded.some(w => text.includes(w))) return false;
+  if (orGroups.length > 0) return orGroups.some(group => group.every(w => text.includes(w)));
+  return required.every(w => text.includes(w));
 }
 
 function highlightText(text, query) {
   if (!query) return esc(text);
-  const words = query.split(/\s+/).filter(Boolean);
+  const { required, orGroups } = parseSearchQuery(query);
+  const words = orGroups.length > 0 ? [...new Set(orGroups.flat())] : required;
   if (!words.length) return esc(text);
-  // Build regex matching any search word (case-insensitive)
+  // Build regex matching any highlight word (case-insensitive)
   const escaped = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const re = new RegExp('(' + escaped.join('|') + ')', 'gi');
   // Split text by capture group — odd indices are matches
@@ -1304,14 +1803,22 @@ function highlightText(text, query) {
 }
 
 function passFilter(v) {
+  if (filterRemote && !isRemoteFriendly(v)) return false;
+  if (filterSalary && !isSalarySpecified(v)) return false;
+  if (filterWorkFormat) { const nrf = normalizeRemote(v.remote); if (nrf !== filterWorkFormat) return false; }
+  if (filterPipelineStatus) { if (getStatus(v.url) !== filterPipelineStatus) return false; }
   if (activeScoreExact !== null && v.score !== activeScoreExact) return false;
+  if (scoreMin > 0 && (v.score === null || v.score < scoreMin)) return false;
+  if (filterType) { const vt = normalizeType(v.type) || 'Не вказано'; if (vt !== filterType) return false; }
   if (activeFilter === 'all') return true;
   if (activeFilter === 'fav') return isFav(v.url);
   if (activeFilter === 'new') return isNew(v.url);
+  if (activeFilter === 'recent') { const age = getAgeDays(v); return age >= 0 && age <= 7; }
   if (activeFilter === 'hot') return v.score >= 6;
   if (activeFilter === 'ok') return v.score >= 4 && v.score < 6;
   if (activeFilter === 'skip') return v.score !== null && v.score < 4;
   if (activeFilter === 'notes') return hasNote(v.url);
+  if (activeFilter === 'followup') return needsFollowUp(v.url);
   if (activeFilter === 'pipeline') return !!getStatus(v.url);
   return true;
 }
@@ -1321,6 +1828,14 @@ function scoreClass(s) {
   if (s >= 6) return 'score-high';
   if (s >= 4) return 'score-mid';
   return 'score-low';
+}
+
+function scoreAccentClass(s) {
+  if (s === null) return '';
+  if (s >= 8) return 'sl-best';
+  if (s >= 6) return 'sl-hot';
+  if (s >= 4) return 'sl-ok';
+  return 'sl-low';
 }
 
 function parseDateToObj(v) {
@@ -1368,7 +1883,68 @@ function ageClass(days) {
   return 'tag-stale';
 }
 
-function isStale(v) { return getAgeDays(v) > 14; }
+function isStale(v) { return getAgeDays(v) > 14 && !getStatus(v.url); }
+
+function sectionAnchorId(name) {
+  return 'sec_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+}
+
+function jumpToSection(anchorId) {
+  const el = document.getElementById(anchorId);
+  if (!el) return;
+  const sticky = document.getElementById('stickyControls');
+  const stickyH = sticky ? sticky.getBoundingClientRect().height : 0;
+  const top = el.getBoundingClientRect().top + window.scrollY - stickyH - 10;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+}
+
+function normalizeType(raw) {
+  if (!raw) return '';
+  const t = raw.toLowerCase().trim();
+  if (t.includes('не вказ')) return '';
+  if (t.includes('product') || t.includes('продукт') || t.includes('маркетплейс') || t.includes('стартап') || t.includes('startup') || t.includes('венчур')) return 'Product';
+  if (t.includes('фінтех') || t.includes('fintech')) return 'Fintech';
+  if (t.includes('gambling') || t.includes('crypto') || t.includes('крипт') || t.includes('гемблінг')) return 'Gambling/Crypto';
+  if (t.includes('аутсорс') || t.includes('outsource') || t.includes('агент') || t.includes('agency') || t.includes('consulting') || t.includes('консалт') || t.includes('service')) return 'Outsource/Agency';
+  if (t.includes('телеком')) return 'Telecom';
+  if (t.includes('фарм') || t.includes('медич') || t.includes('health')) return 'Healthcare';
+  if (t.includes('it') || t.includes('технолог') || t.includes('software') || t.includes('tech')) return 'IT';
+  if (t.includes('маркет') || t.includes('digital')) return 'Marketing/Media';
+  if (t.includes('розваж') || t.includes('entertainment') || t.includes('gaming') && !t.includes('gambling')) return 'Entertainment';
+  return raw;
+}
+
+function normalizeRemote(raw) {
+  const s = (raw || '').toLowerCase();
+  if (/hybrid|гібрид|комбін|частков/.test(s)) return 'Hybrid';
+  if (/remote|ремот|дистанц|віддален|здаль/.test(s)) return 'Remote';
+  if (/office|офіс|присутн|очно/.test(s)) return 'Office';
+  return raw;
+}
+
+function getRemoteTag(v) {
+  if (!v.remote) return '';
+  const norm = normalizeRemote(v.remote);
+  let cls = '';
+  if (norm === 'Remote') cls = 'tag-remote-full';
+  else if (norm === 'Hybrid') cls = 'tag-remote-hybrid';
+  else if (norm === 'Office') cls = 'tag-remote-office';
+  const display = searchQuery ? highlightText(norm, searchQuery) : esc(norm);
+  // Clicking a Remote tag activates the remote filter (if not already active)
+  const extra = norm === 'Remote' ? ` onclick="event.stopPropagation(); if(!filterRemote) toggleRemoteFilter()" style="cursor:pointer"` : '';
+  return `<span class="tag${cls ? ' ' + cls : ''}" title="${escA(v.remote)}"${extra}>${display}</span>`;
+}
+
+function isRemoteFriendly(v) {
+  const r = (v.remote || '').toLowerCase();
+  return r.includes('remote') || r.includes('дистанц') || r.includes('віддален') ||
+         r.includes('ремот') || r.includes('здаль');
+}
+
+function isSalarySpecified(v) {
+  const s = (v.salary || '').trim();
+  return s && s !== 'Не вказана' && s !== 'Не вказано' && s !== 'Не вказано.';
+}
 
 function getDateTag(v) {
   const d = v.published || v.date;
@@ -1383,6 +1959,15 @@ function statusTag(url) {
   const st = getStatus(url);
   if (!st) return '';
   const cls = st === 'Applied' ? 'tag-applied' : st === 'Interview' ? 'tag-interview' : st === 'Offer' ? 'tag-offer' : st === 'Rejected' ? 'tag-rejected' : '';
+  if (st !== 'Rejected') {
+    const d = getStatusDate(url, st);
+    if (d) {
+      const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+      const ageColor = days >= 14 ? 'var(--red)' : days >= 7 ? 'var(--yellow)' : 'var(--green-bright)';
+      const ageStr = days === 0 ? 'сьогодні' : `${days}д`;
+      return `<span class="tag ${cls}">${esc(st)}<span style="color:${ageColor};font-size:10px;margin-left:3px">${ageStr}</span></span>`;
+    }
+  }
   return `<span class="tag ${cls}">${esc(st)}</span>`;
 }
 
@@ -1428,7 +2013,7 @@ function renderKanban() {
         const sc = v.score !== null ? v.score + '/10' : '?';
         const isOpen = openCards.has(v.url);
         html += `
-        <div class="card ${isOpen ? 'open' : ''}${isStale(v) ? ' stale' : ''}" data-url="${escA(v.url)}" data-title="${escA(v.title)}">
+        <div class="card ${isOpen ? 'open' : ''}${isStale(v) ? ' stale' : ''}${scoreAccentClass(v.score) ? ' ' + scoreAccentClass(v.score) : ''}" data-url="${escA(v.url)}" data-title="${escA(v.title)}">
           <div class="card-header" onclick="toggle(this)">
             <div class="chevron">${IC.chevDown}</div>
             <div class="score-badge ${scoreClass(v.score)}">${sc}</div>
@@ -1436,12 +2021,14 @@ function renderKanban() {
               <a class="card-title" href="${escA(v.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(v.title)}</a>
               <div class="card-meta">
                 ${v._section ? `<span class="tag" style="color:var(--muted-deep);border-color:rgba(255,255,255,.04)">${esc(v._section)}</span>` : ''}
-                ${v.remote ? `<span class="tag">${esc(v.remote)}</span>` : ''}
+                ${getRemoteTag(v)}
                 ${v.salary && v.salary !== 'Не вказана' ? `<span class="tag tag-salary">${esc(v.salary)}</span>` : ''}
                 ${getDateTag(v)}
                 ${isFav(v.url) ? '<span class="tag tag-fav">fav</span>' : ''}
                 ${hasNote(v.url) ? '<span class="tag tag-note">note</span>' : ''}
+                ${needsFollowUp(v.url) ? '<span class="tag tag-followup" title="Подано ≥7 днів тому — можливо, варто нагадати про себе">↩ follow-up</span>' : ''}
               </div>
+              ${v.summary ? `<div class="card-summary-preview">${esc(v.summary)}</div>` : ''}
             </div>
             <div class="card-actions">
               <select class="status-sel" onclick="event.stopPropagation()" onchange="setStatus('${escA(v.url)}', this.value)" title="Статус">
@@ -1461,6 +2048,10 @@ function renderKanban() {
                 <div class="note-label">Нотатка <button class="note-edit-btn" onclick="event.stopPropagation(); startEditNote('${escA(v.url)}')">${hasNote(v.url) ? 'Редагувати' : 'Додати'}</button></div>
                 ${hasNote(v.url) ? `<div class="note-text">${esc(getNote(v.url))}</div>` : `<div class="note-text empty">Немає нотатки</div>`}
               </div>
+              ${getStatusMilestonesHtml(v.url)}
+              <div class="panel-copy-row">
+                <button class="copy-btn" onclick="event.stopPropagation(); copyVacancy('${escA(v.url)}')" title="Копіювати деталі вакансії в буфер обміну">${_clipboardIcon} Копіювати</button>
+              </div>
             </div>
           </div>
         </div>`;
@@ -1477,6 +2068,60 @@ function renderKanban() {
   updateBulkDeleteBtn();
 }
 
+function renderTopPicks() {
+  // Only show in "all" view — avoids cluttering filtered views
+  if (activeFilter !== 'all') return '';
+  const seen = getSeenUrls();
+  const topPicks = [];
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      if ((v.score ?? -1) >= 7 && !seen.has(v.url)) {
+        topPicks.push({ ...v, _section: s.name });
+      }
+    }
+  }
+  if (!topPicks.length) return '';
+  topPicks.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  const picks = topPicks.slice(0, 5);
+  const moreCount = topPicks.length - picks.length;
+
+  const rows = picks.map(v => {
+    const sc = v.score !== null ? v.score : '?';
+    return `<div class="top-pick-row">
+      <span class="score-badge ${scoreClass(v.score)}" style="width:26px;height:26px;font-size:11px;border-radius:6px;flex-shrink:0">${sc}</span>
+      <a class="top-pick-title" href="${escA(v.url)}" target="_blank" rel="noopener"
+        onclick="markSeen('${escA(v.url)}');renderFilters();updateTabTitle()"
+        title="${escA(v.title)}">${esc(v.title)}</a>
+      <span class="top-pick-source">${esc(v._section)}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="top-picks-card">
+    <div class="top-picks-hdr">
+      <span class="top-picks-label">🔥 Нові топ-вакансії</span>
+      <span class="top-picks-count">${topPicks.length}</span>
+      <button class="top-picks-seen-all" onclick="markTopPicksSeen()" title="Позначити всі топ-вакансії (score ≥ 7) як переглянуті">✓ Позначити переглянутими</button>
+    </div>
+    ${rows}
+    ${moreCount > 0 ? `<div class="top-pick-more">і ще ${moreCount}…</div>` : ''}
+  </div>`;
+}
+
+function markTopPicksSeen() {
+  const seen = getSeenUrls();
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      if ((v.score ?? -1) >= 7) seen.add(v.url);
+    }
+  }
+  localStorage.setItem('seenUrls', JSON.stringify([...seen]));
+  render();
+  renderFilters();
+  updateTabTitle();
+}
+
 function render() {
   if (activeFilter === 'pipeline') {
     renderKanban();
@@ -1484,15 +2129,20 @@ function render() {
   }
   let html = '';
   let total = 0;
+  const sectionsForNav = [];
 
   for (const section of allData) {
     if (SKIP.includes(section.name)) continue;
+    if (filterSource && section.name !== filterSource) continue;
     const filtered = sortItems(section.items.filter(v => passFilter(v) && matchesSearch(v) && (!hideStale || !isStale(v))));
     if (!filtered.length) continue;
     total += filtered.length;
 
+    const anchorId = sectionAnchorId(section.name);
+    sectionsForNav.push({ name: section.name, count: filtered.length, anchorId });
+
     const isSectionCollapsed = collapsedSections.has(section.name);
-    html += `<div class="section">
+    html += `<div class="section" id="${anchorId}">
       <div class="section-hdr${isSectionCollapsed ? ' collapsed' : ''}" onclick="toggleSection('${escA(section.name)}')">
         <span class="section-hdr-left">
           <span class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
@@ -1507,23 +2157,25 @@ function render() {
       const isOpen = openCards.has(v.url);
 
       html += `
-      <div class="card ${isOpen ? 'open' : ''}${isStale(v) ? ' stale' : ''}" data-url="${escA(v.url)}" data-title="${escA(v.title)}">
+      <div class="card ${isOpen ? 'open' : ''}${isStale(v) ? ' stale' : ''}${scoreAccentClass(v.score) ? ' ' + scoreAccentClass(v.score) : ''}" data-url="${escA(v.url)}" data-title="${escA(v.title)}">
         <div class="card-header" onclick="toggle(this)">
           <div class="chevron">${IC.chevDown}</div>
           <div class="score-badge ${scoreClass(v.score)}">${sc}</div>
           <div class="card-info">
             <a class="card-title" href="${escA(v.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${searchQuery ? highlightText(v.title, searchQuery) : esc(v.title)}</a>
             <div class="card-meta">
-              ${v.type ? `<span class="tag">${searchQuery ? highlightText(v.type, searchQuery) : esc(v.type)}</span>` : ''}
-              ${v.remote ? `<span class="tag">${searchQuery ? highlightText(v.remote, searchQuery) : esc(v.remote)}</span>` : ''}
+              ${v.type ? (() => { const nt = normalizeType(v.type) || v.type; const display = searchQuery ? highlightText(nt, searchQuery) : esc(nt); return `<span class="tag" onclick="event.stopPropagation(); quickFilterType('${escA(nt)}')" style="cursor:pointer" title="${escA(v.type)}">${display}</span>`; })() : ''}
+              ${getRemoteTag(v)}
               ${v.salary && v.salary !== 'Не вказана' ? `<span class="tag tag-salary">${searchQuery ? highlightText(v.salary, searchQuery) : esc(v.salary)}</span>` : ''}
               ${getDateTag(v)}
               ${v.status === 'inactive' ? '<span class="tag tag-inactive">inactive</span>' : ''}
               ${isNew(v.url) ? '<span class="tag tag-new">new</span>' : ''}
               ${isFav(v.url) ? '<span class="tag tag-fav">fav</span>' : ''}
               ${statusTag(v.url)}
+              ${needsFollowUp(v.url) ? '<span class="tag tag-followup" title="Подано ≥7 днів тому — можливо, варто нагадати про себе">↩ follow-up</span>' : ''}
               ${hasNote(v.url) ? '<span class="tag tag-note">note</span>' : ''}
             </div>
+            ${v.summary ? `<div class="card-summary-preview">${searchQuery ? highlightText(v.summary, searchQuery) : esc(v.summary)}</div>` : ''}
           </div>
           <div class="card-actions">
             <select class="status-sel" onclick="event.stopPropagation()" onchange="setStatus('${escA(v.url)}', this.value)" title="Статус">
@@ -1544,6 +2196,10 @@ function render() {
               <div class="note-label">Нотатка <button class="note-edit-btn" onclick="event.stopPropagation(); startEditNote('${escA(v.url)}')">${hasNote(v.url) ? 'Редагувати' : 'Додати'}</button></div>
               ${hasNote(v.url) ? `<div class="note-text">${esc(getNote(v.url))}</div>` : `<div class="note-text empty">Немає нотатки</div>`}
             </div>
+            ${getStatusMilestonesHtml(v.url)}
+            <div class="panel-copy-row">
+              <button class="copy-btn" onclick="event.stopPropagation(); copyVacancy('${escA(v.url)}')" title="Копіювати деталі вакансії в буфер обміну">${_clipboardIcon} Копіювати</button>
+            </div>
           </div>
         </div>
       </div>`;
@@ -1551,15 +2207,31 @@ function render() {
     html += '</div></div>';
   }
 
-  if (!total) html = '<div class="empty">Нічого не знайдено</div>';
+  if (!total) {
+    html = '<div class="empty">Нічого не знайдено</div>';
+  } else if (sectionsForNav.length > 1) {
+    // Prepend section jump navigation bar when multiple sections are visible
+    const navPills = sectionsForNav.map(s =>
+      `<button class="section-nav-pill" onclick="jumpToSection('${escA(s.anchorId)}')">${esc(s.name)}<span class="snp-count">${s.count}</span></button>`
+    ).join('');
+    html = `<div class="section-nav">${navPills}</div>` + html;
+  }
+  // Prepend Top Picks banner (best unseen vacancies with score ≥ 7)
+  const _topPicksHtml = renderTopPicks();
+  if (_topPicksHtml) html = _topPicksHtml + html;
   app.innerHTML = html;
   // Restore max-height for open cards after DOM rebuild
   document.querySelectorAll('.card.open .card-panel').forEach(p => { p.style.maxHeight = 'none'; });
   const totalAll = allData.reduce((acc, s) => SKIP.includes(s.name) ? acc : acc + s.items.length, 0);
-  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null;
-  const scorePart = activeScoreExact !== null ? ` · Score ${activeScoreExact}/10` : '';
+  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null || scoreMin > 0 || !!filterType || filterRemote || filterSalary || !!filterSource || !!filterWorkFormat || !!filterPipelineStatus;
+  const scorePart = activeScoreExact !== null ? ` · Score ${activeScoreExact}/10` : (scoreMin > 0 ? ` · Score ≥${scoreMin}` : '');
+  const typePart2 = filterType ? ` · Тип: ${filterType}` : '';
+  const salaryPart = filterSalary ? ' · З зарплатою' : '';
+  const sourcePart = filterSource ? ` · Джерело: ${filterSource}` : '';
+  const workFmtPart = filterWorkFormat ? ` · ${filterWorkFormat}` : '';
+  const pipelineStatusPart = filterPipelineStatus ? ` · ${filterPipelineStatus}` : '';
   document.getElementById('meta').textContent = isFiltered
-    ? `Показано: ${total} з ${totalAll}${scorePart} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
+    ? `Показано: ${total} з ${totalAll}${scorePart}${typePart2}${salaryPart}${sourcePart}${workFmtPart}${pipelineStatusPart} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`
     : `Всього: ${total} · Оновлено: ${new Date().toLocaleTimeString('uk-UA')}`;
   updateBulkDeleteBtn();
 }
@@ -1725,8 +2397,11 @@ function _closeCheckDetail() {
 
 async function loadStatus() {
   try {
-    const r = await fetch('/api/status');
-    const s = await r.json();
+    const [statusR, histR] = await Promise.all([
+      fetch('/api/status'),
+      fetch('/api/history'),
+    ]);
+    const s = await statusR.json();
     if (s.last_check) {
       lastCheckTs = s.last_check;
       lastCheckAdded = s.added !== undefined ? s.added : null;
@@ -1734,6 +2409,9 @@ async function loadStatus() {
       lastCheckErrors = s.errors || [];
       status('ok');
     }
+    const h = await histR.json();
+    historyData = h.runs || [];
+    if (statsVisible) renderStats();
   } catch(e) {}
 }
 
@@ -1824,6 +2502,56 @@ function updateHideStaleBtn() {
   }
 }
 
+function toggleRemoteFilter() {
+  filterRemote = !filterRemote;
+  localStorage.setItem('filterRemote', filterRemote ? '1' : '0');
+  updateRemoteFilterBtn();
+  renderFilters();
+  render();
+  if (statsVisible) renderStats();
+}
+
+const _globeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>';
+
+function updateRemoteFilterBtn() {
+  const btn = document.getElementById('remoteFilterBtn');
+  if (!btn) return;
+  let remoteCount = 0;
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) if (isRemoteFriendly(v)) remoteCount++;
+  }
+  btn.classList.toggle('toggled', filterRemote);
+  btn.innerHTML = filterRemote
+    ? `${_globeIcon} Remote (${remoteCount})`
+    : `${_globeIcon} Тільки Remote`;
+}
+
+const _salaryIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>';
+
+function toggleSalaryFilter() {
+  filterSalary = !filterSalary;
+  localStorage.setItem('filterSalary', filterSalary ? '1' : '0');
+  updateSalaryFilterBtn();
+  renderFilters();
+  render();
+  if (statsVisible) renderStats();
+}
+
+function updateSalaryFilterBtn() {
+  const btn = document.getElementById('salaryFilterBtn');
+  if (!btn) return;
+  let salaryCount = 0;
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) if (isSalarySpecified(v)) salaryCount++;
+  }
+  btn.classList.toggle('toggled', filterSalary);
+  btn.innerHTML = filterSalary
+    ? `${_salaryIcon} З зарплатою (${salaryCount})`
+    : `${_salaryIcon} З зарплатою`;
+}
+
 let statsVisible = false;
 function toggleStats() {
   statsVisible = !statsVisible;
@@ -1838,6 +2566,8 @@ function setScoreFilter(score) {
     activeScoreExact = null;
   } else {
     activeScoreExact = score;
+    scoreMin = 0;  // exact score filter takes over; clear min filter
+    document.querySelectorAll('.scoremin-btn').forEach(b => b.classList.remove('active'));
     // Open stats panel if not already visible
     if (!statsVisible) {
       statsVisible = true;
@@ -1845,6 +2575,108 @@ function setScoreFilter(score) {
       renderFilters();
     }
   }
+  render();
+  if (statsVisible) renderStats();
+  renderActiveFiltersBar();
+}
+
+function setScoreMin(n) {
+  scoreMin = scoreMin === n ? 0 : n;
+  localStorage.setItem('scoreMin', String(scoreMin));
+  if (scoreMin > 0) activeScoreExact = null;  // exact filter and min filter are mutually exclusive
+  document.querySelectorAll('.scoremin-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.min) === scoreMin);
+  });
+  render();
+  renderActiveFiltersBar();
+  if (statsVisible) renderStats();
+}
+
+function renderActiveFiltersBar() {
+  const bar = document.getElementById('activeFiltersBar');
+  if (!bar) return;
+  const TAB_LABELS = {fav:'Fav', new:'New', recent:'Recent (7д)', hot:'Hot (≥6)', ok:'OK (4–5)', skip:'Skip (<4)', notes:'Notes', followup:'Follow-up (≥7д)'};
+  const chips = [];
+  if (activeFilter !== 'all' && activeFilter !== 'pipeline') {
+    chips.push({label: TAB_LABELS[activeFilter] || activeFilter, onclick: `setFilter('all')`});
+  }
+  if (activeScoreExact !== null) {
+    chips.push({label: `Score ${activeScoreExact}/10`, onclick: `setScoreFilter(${activeScoreExact})`});
+  }
+  if (scoreMin > 0) {
+    chips.push({label: `Score ≥${scoreMin}`, onclick: `setScoreMin(${scoreMin})`});
+  }
+  if (filterType) {
+    chips.push({label: `Тип: ${filterType}`, onclick: `quickFilterType('${escA(filterType)}')`});
+  }
+  if (filterSource) {
+    chips.push({label: `Джерело: ${filterSource}`, onclick: `quickFilterSource('${escA(filterSource)}')`});
+  }
+  if (filterWorkFormat) {
+    chips.push({label: filterWorkFormat, onclick: `quickFilterWorkFormat('${escA(filterWorkFormat)}')`});
+  }
+  if (filterPipelineStatus) {
+    chips.push({label: `Pipeline: ${filterPipelineStatus}`, onclick: `quickFilterPipelineStatus('${escA(filterPipelineStatus)}')`});
+  }
+  if (filterRemote) {
+    chips.push({label: 'Тільки Remote', onclick: 'toggleRemoteFilter()'});
+  }
+  if (filterSalary) {
+    chips.push({label: 'З зарплатою', onclick: 'toggleSalaryFilter()'});
+  }
+  if (hideStale) {
+    chips.push({label: 'Без застарілих', onclick: 'toggleHideStale()'});
+  }
+  if (searchQuery) {
+    const preview = searchQuery.length > 18 ? searchQuery.slice(0, 18) + '…' : searchQuery;
+    chips.push({label: `"${preview}"`, onclick: 'clearSearch()'});
+  }
+  if (!chips.length) {
+    bar.style.display = 'none';
+    return;
+  }
+  const xIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
+  bar.style.display = 'flex';
+  bar.innerHTML = chips.map(c =>
+    `<button class="filter-chip" onclick="${c.onclick}">${esc(c.label)} ${xIcon}</button>`
+  ).join('') +
+  (chips.length > 1 ? `<button class="clear-all-btn" onclick="clearAllFilters()">× Скинути всі</button>` : '');
+}
+
+function clearSearch() {
+  searchQuery = '';
+  const sb = document.getElementById('searchBox');
+  if (sb) sb.value = '';
+  render();
+  renderActiveFiltersBar();
+}
+
+function clearAllFilters() {
+  activeFilter = 'all';
+  activeScoreExact = null;
+  scoreMin = 0;
+  filterType = '';
+  filterSource = '';
+  filterWorkFormat = '';
+  filterPipelineStatus = '';
+  filterRemote = false;
+  filterSalary = false;
+  hideStale = false;
+  searchQuery = '';
+  document.querySelectorAll('.scoremin-btn').forEach(b => b.classList.remove('active'));
+  localStorage.setItem('filterType', '');
+  localStorage.setItem('filterSource', '');
+  localStorage.setItem('filterWorkFormat', '');
+  localStorage.setItem('filterRemote', '0');
+  localStorage.setItem('filterSalary', '0');
+  localStorage.setItem('hideStale', '0');
+  localStorage.setItem('scoreMin', '0');
+  const sb = document.getElementById('searchBox');
+  if (sb) sb.value = '';
+  updateRemoteFilterBtn();
+  updateSalaryFilterBtn();
+  updateHideStaleBtn();
+  renderFilters();
   render();
   if (statsVisible) renderStats();
 }
@@ -1858,6 +2690,7 @@ function renderStats() {
   const statuses = getStatuses();
   const notesData = getNotes();
   const pipeline = {Applied:0, Interview:0, Offer:0, Rejected:0};
+  let followupCount = 0;
   for (const s of allData) {
     if (SKIP.includes(s.name)) continue;
     for (const v of s.items) {
@@ -1866,13 +2699,16 @@ function renderStats() {
       if (notesData[v.url]) noteCount++;
       const st = statuses[v.url];
       if (st && pipeline.hasOwnProperty(st)) pipeline[st]++;
-      if (!sources[s.name]) sources[s.name] = { count: 0, sum: 0, scored: 0 };
+      if (needsFollowUp(v.url)) followupCount++;
+      if (!sources[s.name]) sources[s.name] = { count: 0, sum: 0, scored: 0, high: 0, mid: 0, low: 0 };
       sources[s.name].count++;
       if (v.score === null) { none++; }
       else {
         scored++; sumScore += v.score;
         sources[s.name].sum += v.score; sources[s.name].scored++;
-        if (v.score >= 6) high++; else if (v.score >= 4) mid++; else low++;
+        if (v.score >= 6) { high++; sources[s.name].high++; }
+        else if (v.score >= 4) { mid++; sources[s.name].mid++; }
+        else { low++; sources[s.name].low++; }
       }
     }
   }
@@ -1918,7 +2754,699 @@ function renderStats() {
     const avgBadge = srcAvg !== null
       ? ` <span style="color:${avgColor};font-size:10px;margin-left:2px" title="Середній бал">★${srcAvg}</span>`
       : '';
-    sourcesHtml += `<span class="source-chip">${esc(name)}<b>${data.count}</b>${avgBadge}</span>`;
+    const isActiveSrc = filterSource === name;
+    const srcChipStyle = isActiveSrc
+      ? 'cursor:pointer;background:rgba(94,106,210,.15);border-color:rgba(113,112,255,.3);color:var(--accent-bright)'
+      : 'cursor:pointer';
+    sourcesHtml += `<span class="source-chip" onclick="quickFilterSource('${escA(name)}')" style="${srcChipStyle}" title="Клік — фільтрувати за джерелом">${esc(name)}<b>${data.count}</b>${avgBadge}</span>`;
+  }
+
+  // Source quality distribution card (horizontal bars per source)
+  let sourceQualityCardHtml = '';
+  {
+    const srcEntries = Object.entries(sources).sort((a, b) => b[1].count - a[1].count);
+    if (srcEntries.length >= 2) {
+      const rowsHtml = srcEntries.map(([name, d]) => {
+        const noScore = d.count - d.scored;
+        const barW = (n) => d.count ? (n / d.count * 100).toFixed(1) : 0;
+        const srcAvg = d.scored ? (d.sum / d.scored).toFixed(1) : null;
+        const avgColor = srcAvg === null ? 'var(--muted-deep)'
+          : srcAvg >= 6 ? 'var(--green-bright)' : srcAvg >= 4 ? 'var(--yellow)' : 'var(--red)';
+        const isActive = filterSource === name;
+        const rowBg = isActive ? 'background:rgba(94,106,210,.06);border-radius:4px;' : '';
+        const nameColor = isActive ? 'var(--accent-bright)' : 'var(--text-secondary)';
+        const segs = [
+          { w: barW(d.high),   col: 'var(--green-bright)',        ttl: `Якісні (≥6): ${d.high}` },
+          { w: barW(d.mid),    col: 'var(--yellow)',              ttl: `OK (4–5): ${d.mid}` },
+          { w: barW(d.low),    col: 'var(--red)',                 ttl: `Низькі (<4): ${d.low}` },
+          { w: barW(noScore),  col: 'rgba(255,255,255,0.07)',     ttl: `Без оцінки: ${noScore}` },
+        ].filter(s => parseFloat(s.w) > 0);
+        const segsHtml = segs.map(s => `<div style="width:${s.w}%;background:${s.col};height:100%;border-radius:1px" title="${s.ttl}"></div>`).join('');
+        return `<div style="display:flex;align-items:center;gap:8px;padding:4px 6px;cursor:pointer;${rowBg}" onclick="quickFilterSource('${escA(name)}')" title="Клік — фільтрувати за джерелом">
+          <div style="flex:0 0 130px;font-size:11px;color:${nameColor};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>
+          <div style="flex:1;height:7px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;display:flex;gap:1px">${segsHtml}</div>
+          <div style="flex:0 0 64px;text-align:right;font-size:10.5px;color:var(--muted-deep);white-space:nowrap">${d.count} вак. <span style="color:${avgColor}">${srcAvg !== null ? '★' + srcAvg : '—'}</span></div>
+        </div>`;
+      }).join('');
+      const qualLegend = `<div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+        <span style="font-size:10px;color:var(--muted-deep);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;background:var(--green-bright);border-radius:1px;display:inline-block;flex-shrink:0"></span>Якісні ≥6</span>
+        <span style="font-size:10px;color:var(--muted-deep);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;background:var(--yellow);border-radius:1px;display:inline-block;flex-shrink:0"></span>OK 4–5</span>
+        <span style="font-size:10px;color:var(--muted-deep);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;background:var(--red);border-radius:1px;display:inline-block;flex-shrink:0"></span>Низькі &lt;4</span>
+        <span style="font-size:10px;color:var(--muted-deep);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;background:rgba(255,255,255,0.07);border-radius:1px;display:inline-block;flex-shrink:0"></span>Без оцінки</span>
+      </div>`;
+      sourceQualityCardHtml = `<div class="stat-card wide">
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Якість за джерелами</span>
+          ${filterSource ? `<span class="score-filter-badge" onclick="quickFilterSource('${escA(filterSource)}')" title="Скинути фільтр"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ${esc(filterSource)}</span>` : `<span style="font-size:10px;color:var(--muted-deep)">клік → фільтр</span>`}
+        </div>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:1px">${rowsHtml}</div>
+        ${qualLegend}
+      </div>`;
+    }
+  }
+
+  // Company type breakdown (normalized)
+  const typeMap = {};
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      const key = normalizeType(v.type) || 'Не вказано';
+      if (!typeMap[key]) typeMap[key] = { count: 0, sum: 0, scored: 0 };
+      typeMap[key].count++;
+      if (v.score !== null) { typeMap[key].sum += v.score; typeMap[key].scored++; }
+    }
+  }
+  let typesHtml = '';
+  for (const [type, data] of Object.entries(typeMap).sort((a,b) => b[1].count - a[1].count)) {
+    const tAvg = data.scored ? (data.sum / data.scored).toFixed(1) : null;
+    const tColor = tAvg === null ? 'var(--muted-deep)'
+      : tAvg >= 6 ? 'var(--green-bright)'
+      : tAvg >= 4 ? 'var(--yellow)'
+      : 'var(--red)';
+    const tBadge = tAvg !== null ? ` <span style="color:${tColor};font-size:10px;margin-left:2px" title="Середній бал">★${tAvg}</span>` : '';
+    const isActiveType = filterType === type;
+    const typeChipStyle = isActiveType ? 'cursor:pointer;background:rgba(94,106,210,.15);border-color:rgba(113,112,255,.3);color:var(--accent-bright)' : 'cursor:pointer';
+    typesHtml += `<span class="source-chip" onclick="quickFilterType('${escA(type)}')" style="${typeChipStyle}" title="Клік — фільтрувати за типом">${esc(type)}<b>${data.count}</b>${tBadge}</span>`;
+  }
+
+  // Work format breakdown (Remote / Hybrid / Office)
+  const KNOWN_FORMATS = ['Remote', 'Hybrid', 'Office'];
+  const workFmtMap = {};
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      const key = normalizeRemote(v.remote) || 'Не вказано';
+      if (!workFmtMap[key]) workFmtMap[key] = { count: 0, sum: 0, scored: 0 };
+      workFmtMap[key].count++;
+      if (v.score !== null) { workFmtMap[key].sum += v.score; workFmtMap[key].scored++; }
+    }
+  }
+  // Sort: known formats first (Remote, Hybrid, Office), then others by count
+  const sortedFormats = Object.keys(workFmtMap).sort((a, b) => {
+    const ai = KNOWN_FORMATS.indexOf(a), bi = KNOWN_FORMATS.indexOf(b);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
+    return workFmtMap[b].count - workFmtMap[a].count;
+  });
+  let workFmtHtml = '';
+  for (const fmt of sortedFormats) {
+    const data = workFmtMap[fmt];
+    const fmtAvg = data.scored ? (data.sum / data.scored).toFixed(1) : null;
+    const fmtColor = fmtAvg === null ? 'var(--muted-deep)'
+      : fmtAvg >= 6 ? 'var(--green-bright)'
+      : fmtAvg >= 4 ? 'var(--yellow)'
+      : 'var(--red)';
+    const fmtBadge = fmtAvg !== null ? ` <span style="color:${fmtColor};font-size:10px;margin-left:2px" title="Середній бал">★${fmtAvg}</span>` : '';
+    const isActiveFmt = filterWorkFormat === fmt;
+    const fmtChipStyle = isActiveFmt
+      ? 'cursor:pointer;background:rgba(94,106,210,.15);border-color:rgba(113,112,255,.3);color:var(--accent-bright)'
+      : 'cursor:pointer';
+    const isClickable = KNOWN_FORMATS.includes(fmt);
+    if (isClickable) {
+      workFmtHtml += `<span class="source-chip" onclick="quickFilterWorkFormat('${escA(fmt)}')" style="${fmtChipStyle}" title="Клік — фільтрувати за форматом">${esc(fmt)}<b>${data.count}</b>${fmtBadge}</span>`;
+    } else {
+      workFmtHtml += `<span class="source-chip" style="opacity:.7">${esc(fmt)}<b>${data.count}</b>${fmtBadge}</span>`;
+    }
+  }
+
+  // Salary distribution analytics card
+  let salaryCardHtml = '';
+  {
+    const salaryValues = [];
+    let noSalary = 0;
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        const sv = parseSalaryNum(v);
+        if (sv === -1) noSalary++;
+        else salaryValues.push(sv);
+      }
+    }
+    const withSalary = salaryValues.length;
+    const totalForSalary = withSalary + noSalary;
+    if (totalForSalary > 0) {
+      // Buckets: PLN-equiv < 8000 ≈ <$2k, 8000-16000 ≈ $2-4k, 16000-24000 ≈ $4-6k, >24000 ≈ >$6k
+      const SAL_BUCKETS = [
+        { label: '<$2k',  max: 8000,           color: 'var(--red)',         count: 0 },
+        { label: '$2–4k', min: 8000,  max: 16000, color: 'var(--yellow)',     count: 0 },
+        { label: '$4–6k', min: 16000, max: 24000, color: 'var(--green)',      count: 0 },
+        { label: '>$6k',  min: 24000,            color: 'var(--green-bright)', count: 0 },
+      ];
+      for (const sv of salaryValues) {
+        if (sv < 8000)       SAL_BUCKETS[0].count++;
+        else if (sv < 16000) SAL_BUCKETS[1].count++;
+        else if (sv < 24000) SAL_BUCKETS[2].count++;
+        else                 SAL_BUCKETS[3].count++;
+      }
+      // Median (in USD-equiv: PLN-equiv / 4)
+      const sortedSal = [...salaryValues].sort((a, b) => a - b);
+      const medPLN = sortedSal.length ? sortedSal[Math.floor(sortedSal.length / 2)] : null;
+      const medUSD = medPLN !== null ? Math.round(medPLN / 4) : null;
+      const medStr = medUSD !== null
+        ? '~$' + (medUSD >= 1000 ? (medUSD / 1000).toFixed(1) + 'k' : medUSD) + '/мо'
+        : '—';
+      const noPct = Math.round(noSalary / totalForSalary * 100);
+      const withPct = 100 - noPct;
+
+      // Stacked horizontal bar segments
+      const barSegsHtml = SAL_BUCKETS.map(b => {
+        const pctOfWith = withSalary ? (b.count / withSalary * 100).toFixed(1) : 0;
+        return b.count > 0
+          ? `<div style="flex:${b.count};background:${b.color};height:8px;border-radius:2px;min-width:4px" title="${b.label}: ${b.count} (${pctOfWith}% від вакансій із зарплатою)"></div>`
+          : '';
+      }).join('') + (noSalary > 0
+        ? `<div style="flex:${noSalary};background:rgba(255,255,255,0.07);height:8px;border-radius:2px;min-width:4px" title="Не вказана: ${noSalary} (${noPct}%)"></div>`
+        : '');
+
+      salaryCardHtml = `<div class="stat-card wide">
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Аналітика зарплат</span>
+          <span style="color:var(--muted-deep);font-size:10px">медіана ${medStr} · вказана у ${withPct}%</span>
+        </div>
+        <div style="display:flex;gap:3px;height:8px;border-radius:4px;overflow:hidden;margin:8px 0 4px">${barSegsHtml}</div>
+        <div class="score-bar-legend">
+          ${SAL_BUCKETS.map(b => `<span><span class="legend-dot" style="background:${b.color}"></span>${b.label}: ${b.count}</span>`).join('')}
+          <span><span class="legend-dot" style="background:rgba(255,255,255,0.12)"></span>Не вказана: ${noSalary}</span>
+        </div>
+      </div>`;
+    }
+  }
+
+  // Age distribution card (pipeline freshness)
+  let ageCardHtml = '';
+  {
+    const AGE_BUCKETS = [
+      { label: 'Сьогодні',   color: 'var(--green-bright)',          count: 0 },
+      { label: '1–3 дні',    color: 'var(--green)',                  count: 0 },
+      { label: '4–7 днів',   color: 'var(--yellow)',                 count: 0 },
+      { label: '1–2 тижні',  color: 'rgba(255,165,2,.45)',           count: 0 },
+      { label: '2–4 тижні',  color: 'rgba(255,71,87,.65)',           count: 0 },
+      { label: 'Старше',     color: 'rgba(255,71,87,.3)',            count: 0 },
+    ];
+    let noDate = 0;
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        const age = getAgeDays(v);
+        if (age < 0) { noDate++; continue; }
+        if (age === 0)       AGE_BUCKETS[0].count++;
+        else if (age <= 3)   AGE_BUCKETS[1].count++;
+        else if (age <= 7)   AGE_BUCKETS[2].count++;
+        else if (age <= 14)  AGE_BUCKETS[3].count++;
+        else if (age <= 28)  AGE_BUCKETS[4].count++;
+        else                 AGE_BUCKETS[5].count++;
+      }
+    }
+    const totalWithDate = AGE_BUCKETS.reduce((a, b) => a + b.count, 0);
+    const freshCount = AGE_BUCKETS[0].count + AGE_BUCKETS[1].count + AGE_BUCKETS[2].count;
+    const freshPct = totalWithDate ? Math.round(freshCount / totalWithDate * 100) : 0;
+    const barSegsHtml = AGE_BUCKETS.map(b =>
+      b.count > 0
+        ? `<div style="flex:${b.count};background:${b.color};height:8px;border-radius:2px;min-width:4px" title="${b.label}: ${b.count}"></div>`
+        : ''
+    ).join('') + (noDate > 0
+      ? `<div style="flex:${noDate};background:rgba(255,255,255,0.07);height:8px;border-radius:2px;min-width:4px" title="Без дати: ${noDate}"></div>`
+      : '');
+    ageCardHtml = `<div class="stat-card wide">
+      <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Актуальність вакансій</span>
+        <span style="color:var(--muted-deep);font-size:10px">свіжих ≤7д: ${freshCount} · ${freshPct}%</span>
+      </div>
+      <div style="display:flex;gap:3px;height:8px;border-radius:4px;overflow:hidden;margin:8px 0 4px">${barSegsHtml}</div>
+      <div class="score-bar-legend">
+        ${AGE_BUCKETS.map(b => `<span><span class="legend-dot" style="background:${b.color}"></span>${b.label}: ${b.count}</span>`).join('')}
+        ${noDate > 0 ? `<span><span class="legend-dot" style="background:rgba(255,255,255,0.12)"></span>Без дати: ${noDate}</span>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // Activity heatmap card — last 28 days of vacancy additions
+  let activityCardHtml = '';
+  {
+    // Build a map of daysAgo (0..27) → { count, scoreSum, scoreCount }
+    const dayMap = {};
+    const dayScoreMap = {};
+    const todayMs = new Date().setHours(0, 0, 0, 0);
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        const dt = parseDateToObj(v);
+        if (!dt) continue;
+        dt.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((todayMs - dt.getTime()) / 86400000);
+        if (diffDays >= 0 && diffDays < 28) {
+          dayMap[diffDays] = (dayMap[diffDays] || 0) + 1;
+          if (v.score !== null) {
+            if (!dayScoreMap[diffDays]) dayScoreMap[diffDays] = { sum: 0, count: 0 };
+            dayScoreMap[diffDays].sum += v.score;
+            dayScoreMap[diffDays].count++;
+          }
+        }
+      }
+    }
+    const totalLast28 = Object.values(dayMap).reduce((a, b) => a + b, 0);
+    // Build 28 cells: index i = (27-i) days ago, left-to-right oldest→newest
+    const cells = [];
+    for (let i = 27; i >= 0; i--) {
+      const count = dayMap[i] || 0;
+      const cellDate = new Date(todayMs - i * 86400000);
+      const dd = String(cellDate.getDate()).padStart(2, '0');
+      const mm = String(cellDate.getMonth() + 1).padStart(2, '0');
+      const dateStr = dd + '.' + mm;
+      let bg;
+      if (count === 0)      bg = 'rgba(255,255,255,0.045)';
+      else if (count === 1) bg = 'rgba(16,185,129,0.28)';
+      else if (count <= 3)  bg = 'rgba(16,185,129,0.58)';
+      else                  bg = 'var(--green-bright)';
+      // Compute average score for this day (for bottom border quality indicator)
+      const sd = dayScoreMap[i];
+      const avgScore = sd && sd.count > 0 ? sd.sum / sd.count : null;
+      let scoreBorderColor = '';
+      if (avgScore !== null) {
+        if (avgScore >= 6)      scoreBorderColor = 'rgba(16,185,129,0.95)';
+        else if (avgScore >= 4) scoreBorderColor = 'rgba(255,165,2,0.9)';
+        else                    scoreBorderColor = 'rgba(255,71,87,0.8)';
+      }
+      const scoreBorder = scoreBorderColor ? ';border-bottom:2px solid ' + scoreBorderColor : (count > 0 ? ';border-bottom:2px solid rgba(255,255,255,0.10)' : '');
+      const todayBorder = i === 0 ? ';box-shadow:0 0 0 1px rgba(255,255,255,0.18)' : '';
+      const avgStr = avgScore !== null ? ' · avg\u00a0' + avgScore.toFixed(1) : '';
+      const tooltip = count > 0 ? dateStr + ': ' + count + '\u00a0вак.' + avgStr : dateStr;
+      cells.push('<div style="width:100%;aspect-ratio:1;border-radius:2px;background:' + bg + scoreBorder + todayBorder + '" title="' + tooltip + '"></div>');
+    }
+    // Weekday label row: column j maps to weekday of (today − (27−j) days)
+    // Column 0 = oldest (27 days ago), Column 6 = same weekday as today
+    const UK_DAYS = ['\u041d\u0434','\u041f\u043d','\u0412\u0442','\u0421\u0440','\u0427\u0442','\u041f\u0442','\u0421\u0431'];
+    const weekdayLabels = Array.from({length:7}, function(_, j) {
+      var dow = new Date(todayMs - (27 - j) * 86400000).getDay();
+      var isWeekend = (dow === 0 || dow === 6);
+      var color = isWeekend ? 'rgba(255,71,87,.45)' : 'rgba(255,255,255,.22)';
+      return '<div style="text-align:center;font-size:8px;line-height:10px;color:' + color + '">' + UK_DAYS[dow] + '</div>';
+    }).join('');
+    activityCardHtml = '<div class="stat-card wide">'
+      + '<div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">'
+      + '<span>Активність за 4 тижні</span>'
+      + '<span style="color:var(--muted-deep);font-size:10px">' + totalLast28 + '\u00a0вак. за 28 днів</span>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin:6px 0 2px">'
+      + weekdayLabels
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin:0 0 4px">'
+      + cells.join('')
+      + '</div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted-deep);margin-top:1px">'
+      + '<span>\u2212 4 тижні</span>'
+      + '<div style="display:flex;align-items:center;gap:4px">'
+      + '<span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:rgba(255,255,255,0.045)"></span>'
+      + '<span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:rgba(16,185,129,0.28)"></span>'
+      + '<span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:rgba(16,185,129,0.58)"></span>'
+      + '<span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--green-bright)"></span>'
+      + '<span style="color:var(--muted-deep)">0→1→3→4+\u00a0вак.</span>'
+      + '<span style="margin-left:6px;display:inline-block;width:8px;height:8px;border-radius:1px;background:rgba(255,71,87,0.8)"></span>'
+      + '<span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:rgba(255,165,2,0.9)"></span>'
+      + '<span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:rgba(16,185,129,0.95)"></span>'
+      + '<span style="color:var(--muted-deep)">avg\u00a0score</span>'
+      + '</div>'
+      + '<span>сьогодні</span>'
+      + '</div>'
+      + '</div>';
+  }
+
+  // 14-day score trend sparkline: avg score per day
+  let scoreTrendCardHtml = '';
+  {
+    const TREND_DAYS = 14;
+    const trendMap = {}; // daysAgo → {sum, count}
+    const todayMsTrend = new Date().setHours(0, 0, 0, 0);
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        if (v.score === null) continue;
+        const dt = parseDateToObj(v);
+        if (!dt) continue;
+        dt.setHours(0, 0, 0, 0);
+        const diff = Math.round((todayMsTrend - dt.getTime()) / 86400000);
+        if (diff >= 0 && diff < TREND_DAYS) {
+          if (!trendMap[diff]) trendMap[diff] = { sum: 0, count: 0 };
+          trendMap[diff].sum += v.score;
+          trendMap[diff].count++;
+        }
+      }
+    }
+    const daysWithData = Object.values(trendMap).filter(d => d.count > 0).length;
+    if (daysWithData >= 3) {
+      const TREND_BAR_H = 36;
+      let trendTotalScored = 0, trendTotalSum = 0;
+      const trendBars = [];
+      for (let i = TREND_DAYS - 1; i >= 0; i--) {
+        const cellDate = new Date(todayMsTrend - i * 86400000);
+        const dd = String(cellDate.getDate()).padStart(2, '0');
+        const mm = String(cellDate.getMonth() + 1).padStart(2, '0');
+        const dateStr = dd + '.' + mm;
+        const d = trendMap[i];
+        if (d && d.count > 0) {
+          trendTotalScored += d.count;
+          trendTotalSum += d.sum;
+          const avg = d.sum / d.count;
+          const h = Math.max(3, Math.round(avg / 10 * TREND_BAR_H));
+          const col = avg >= 7 ? 'var(--green-bright)' : avg >= 5 ? 'var(--yellow)' : 'var(--red)';
+          const avgFmt = avg.toFixed(1);
+          trendBars.push(`<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;cursor:default" title="${dateStr}: avg\u00a0${avgFmt} (${d.count}\u00a0вак.)">
+            <span style="font-size:8px;color:var(--muted-deep);line-height:10px;margin-bottom:1px">${avgFmt}</span>
+            <div style="width:100%;height:${h}px;background:${col};border-radius:2px 2px 1px 1px;opacity:0.9"></div>
+          </div>`);
+        } else {
+          trendBars.push(`<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;cursor:default" title="${dateStr}">
+            <div style="width:100%;height:2px;background:rgba(255,255,255,0.06);border-radius:1px"></div>
+          </div>`);
+        }
+      }
+      const trendOverallAvg = trendTotalScored ? (trendTotalSum / trendTotalScored).toFixed(1) : '—';
+      scoreTrendCardHtml = `<div class="stat-card wide">
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Тренд якості за 14 днів</span>
+          <span style="color:var(--muted-deep);font-size:10px">avg ${trendOverallAvg} · ${daysWithData} активних днів</span>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:2px;height:${TREND_BAR_H + 14}px;margin:8px 0 2px;padding-bottom:2px;border-bottom:1px solid var(--border-subtle)">
+          ${trendBars.join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted-deep);margin-top:3px">
+          <span>\u221214 днів</span>
+          <div class="score-bar-legend" style="margin:0;font-size:9px">
+            <span><span class="legend-dot" style="background:var(--green-bright)"></span>avg\u00a0\u22657</span>
+            <span><span class="legend-dot" style="background:var(--yellow)"></span>5\u20136</span>
+            <span><span class="legend-dot" style="background:var(--red)"></span>&lt;5</span>
+          </div>
+          <span>сьогодні</span>
+        </div>
+      </div>`;
+    }
+  }
+
+  // Pre-compute check history card HTML
+  let historyCardHtml = '';
+  if (historyData.length) {
+    let histRowsHtml = '';
+    for (const run of historyData) {
+      const d = (run.date || '').replace(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})$/, '$3.$2 $4');
+      const added = run.added;
+      const found = run.found || 0;
+      const skipped = run.skipped || 0;
+      const rowStyle = added > 0 ? 'border-left:2px solid var(--green-bright)' : 'border-left:2px solid var(--border)';
+      const addedStr = added === null
+        ? '<span style="color:var(--yellow);font-size:11px">\u26a0</span>'
+        : added > 0
+          ? '<span style="color:var(--green-bright);font-weight:600;font-size:12px">+' + added + '</span>'
+          : '<span style="color:var(--muted-deep);font-size:12px">\u2014</span>';
+      const detailStr = found > 0
+        ? '<span style="color:var(--muted);font-size:10px">\u0437\u043d\u0430\u0439\u0434\u0435\u043d\u043e ' + found + (skipped ? ', \u043f\u0440\u043e\u043f\u0443\u0449. ' + skipped : '') + '</span>'
+        : '<span style="color:var(--muted-deep);font-size:10px">\u043d\u0456\u0447\u043e\u0433\u043e \u043d\u043e\u0432\u043e\u0433\u043e</span>';
+      histRowsHtml += '<div class="check-history-row" style="' + rowStyle + '">'
+        + '<span class="check-history-date">' + d + '</span>'
+        + '<span class="check-history-added">' + addedStr + '</span>'
+        + '<span class="check-history-detail">' + detailStr + '</span>'
+        + '</div>';
+    }
+    historyCardHtml = '<div class="stat-card wide">'
+      + '<div class="stat-label">\u041e\u0441\u0442\u0430\u043d\u043d\u0456 \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u043a\u0438</div>'
+      + '<div class="check-history-list">' + histRowsHtml + '</div>'
+      + '</div>';
+  }
+
+  // Pipeline funnel visualization card
+  let funnelCardHtml = '';
+  if (pipelineTotal > 0) {
+    const BAR_MAX_H = 44;
+    const maxStageCount = Math.max(pipeline.Applied, pipeline.Interview, pipeline.Offer, pipeline.Rejected, 1);
+    const progressedPast = pipeline.Interview + pipeline.Offer;
+    const rateInterview = pipelineTotal > 0 ? Math.round(progressedPast / pipelineTotal * 100) : null;
+    const rateOffer = progressedPast > 0 ? Math.round(pipeline.Offer / progressedPast * 100) : null;
+
+    // Compute avg days Applied→Interview from date tracking
+    const statusDates = getStatusDates();
+    let appliedToInterviewDays = [];
+    let appliedToRejectedDays = [];
+    for (const url of Object.keys(statusDates)) {
+      const dates = statusDates[url];
+      if (dates.Applied && dates.Interview) {
+        const diff = (new Date(dates.Interview) - new Date(dates.Applied)) / 86400000;
+        if (diff >= 0) appliedToInterviewDays.push(diff);
+      }
+      if (dates.Applied && dates.Rejected && !dates.Interview) {
+        const diff = (new Date(dates.Rejected) - new Date(dates.Applied)) / 86400000;
+        if (diff >= 0) appliedToRejectedDays.push(diff);
+      }
+    }
+    const avgA2I = appliedToInterviewDays.length
+      ? Math.round(appliedToInterviewDays.reduce((a, b) => a + b, 0) / appliedToInterviewDays.length)
+      : null;
+
+    const rateLabel = [
+      rateInterview !== null ? `інтерв'ю: ${rateInterview}%` : '',
+      rateOffer !== null ? `оффер: ${rateOffer}%` : '',
+      avgA2I !== null ? `відгук за ~${avgA2I}д` : '',
+    ].filter(Boolean).join(' · ');
+    const FUNNEL_STAGES = [
+      { key: 'Applied',   label: 'Applied',   color: 'var(--accent-bright)' },
+      { key: 'Interview', label: 'Interview',  color: 'var(--green)' },
+      { key: 'Offer',     label: 'Offer',      color: 'var(--green-bright)' },
+      { key: 'Rejected',  label: 'Rejected',   color: 'rgba(255,71,87,.55)' },
+    ];
+    const stagesHtml = FUNNEL_STAGES.map(st => {
+      const cnt = pipeline[st.key];
+      const h = cnt > 0 ? Math.max(4, Math.round(cnt / maxStageCount * BAR_MAX_H)) : 3;
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+        <div style="font-size:11px;font-weight:590;color:${cnt > 0 ? st.color : 'var(--muted-deep)'};height:14px;line-height:14px">${cnt > 0 ? cnt : ''}</div>
+        <div style="width:100%;height:${BAR_MAX_H}px;display:flex;align-items:flex-end">
+          <div style="width:100%;height:${h}px;background:${st.color};opacity:${cnt > 0 ? 1 : 0.15};border-radius:3px 3px 2px 2px"></div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);text-align:center">${st.label}</div>
+      </div>`;
+    }).join('');
+    funnelCardHtml = `<div class="stat-card wide">
+      <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Воронка заявок</span>
+        ${rateLabel ? `<span style="font-size:10px;color:var(--muted-deep)">${rateLabel}</span>` : ''}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px">${stagesHtml}</div>
+    </div>`;
+  }
+
+  // Notes overview card — list all vacancies with notes
+  let notesCardHtml = '';
+  if (noteCount > 0) {
+    // Collect vacancies with notes
+    const STATUS_PRIORITY = { 'Interview': 0, 'Offer': 0, 'Applied': 1, 'Rejected': 3 };
+    const notedVacancies = [];
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        const note = notesData[v.url];
+        if (!note) continue;
+        notedVacancies.push({ v, note, sectionName: s.name });
+      }
+    }
+    // Sort: Interview/Offer first, then Applied, then others (by score desc within group)
+    notedVacancies.sort((a, b) => {
+      const stA = statuses[a.v.url] || '';
+      const stB = statuses[b.v.url] || '';
+      const pA = STATUS_PRIORITY[stA] ?? 2;
+      const pB = STATUS_PRIORITY[stB] ?? 2;
+      if (pA !== pB) return pA - pB;
+      return (b.v.score ?? -1) - (a.v.score ?? -1);
+    });
+
+    const notesRowsHtml = notedVacancies.map(({ v, note }) => {
+      const sc = v.score !== null ? v.score : null;
+      const scLabel = sc !== null ? sc + '/10' : '?';
+      const scCls = sc === null ? '' : sc >= 6 ? 'high' : sc >= 4 ? 'mid' : 'low';
+      const st = statuses[v.url] || '';
+      const stColors = { Applied: 'var(--accent-bright)', Interview: 'var(--green)', Offer: 'var(--green-bright)', Rejected: 'var(--muted)' };
+      const stBadge = st ? `<span style="font-size:10px;color:${stColors[st]||'var(--muted)'};background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);padding:0 5px;border-radius:9999px;line-height:17px">${esc(st)}</span>` : '';
+      const noteShort = note.length > 120 ? esc(note.slice(0, 120)) + '…' : esc(note);
+      return `<div class="stat-note-row">
+        <div class="stat-note-score ${scCls}">${scLabel}</div>
+        <div class="stat-note-body">
+          <a class="stat-note-title" href="${escA(v.url)}" target="_blank" rel="noopener" title="${escA(v.title)}">${esc(v.title)}</a>
+          <div class="stat-note-meta">${stBadge}</div>
+          <div class="stat-note-text">${noteShort}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    notesCardHtml = `<div class="stat-card wide">
+      <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Нотатки (${noteCount})</span>
+        <span style="font-size:10px;color:var(--muted-deep);cursor:pointer" onclick="setFilter('notes');toggleStats()" title="Перейти до фільтру Нотатки">переглянути всі →</span>
+      </div>
+      <div class="stat-notes-list">${notesRowsHtml}</div>
+    </div>`;
+  }
+
+  // Week-over-week comparison card
+  let weeklyCardHtml = '';
+  {
+    // this week: 0–6 days ago; last week: 7–13 days ago
+    const weekThis = { count: 0, scoreSum: 0, scored: 0, highQuality: 0 };
+    const weekLast = { count: 0, scoreSum: 0, scored: 0, highQuality: 0 };
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        const age = getAgeDays(v);
+        if (age < 0) continue;
+        const week = age <= 6 ? weekThis : age <= 13 ? weekLast : null;
+        if (!week) continue;
+        week.count++;
+        if (v.score !== null) {
+          week.scored++;
+          week.scoreSum += v.score;
+          if (v.score >= 7) week.highQuality++;
+        }
+      }
+    }
+    const avgThis = weekThis.scored ? (weekThis.scoreSum / weekThis.scored).toFixed(1) : null;
+    const avgLast = weekLast.scored ? (weekLast.scoreSum / weekLast.scored).toFixed(1) : null;
+
+    function _wDiff(curr, prev) {
+      const d = curr - prev;
+      if (d > 0) return `<span style="color:var(--green-bright)">↑ +${d}</span>`;
+      if (d < 0) return `<span style="color:var(--red)">↓ ${d}</span>`;
+      return `<span style="color:var(--muted-deep)">= без змін</span>`;
+    }
+    function _wDiffF(curr, prev) {
+      if (curr === null || prev === null) return `<span style="color:var(--muted-deep)">—</span>`;
+      const d = parseFloat(curr) - parseFloat(prev);
+      if (d > 0.05) return `<span style="color:var(--green-bright)">↑ +${d.toFixed(1)}</span>`;
+      if (d < -0.05) return `<span style="color:var(--red)">↓ ${d.toFixed(1)}</span>`;
+      return `<span style="color:var(--muted-deep)">≈ без змін</span>`;
+    }
+
+    const prevBadge = (n, isScore) =>
+      `<span style="font-size:10px;color:var(--muted-deep);margin-top:1px">vs ${isScore ? (n || '—') : n} мин.</span>`;
+
+    weeklyCardHtml = `<div class="stat-card wide">
+      <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Тиждень до тижня</span>
+        <span style="color:var(--muted-deep);font-size:10px">0–6д vs 7–13д</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:600;color:var(--text);letter-spacing:-0.5px">${weekThis.count}</div>
+          <div style="font-size:11px;margin:2px 0">${_wDiff(weekThis.count, weekLast.count)}</div>
+          ${prevBadge(weekLast.count, false)}
+          <div style="font-size:10px;color:var(--muted-deep);margin-top:3px">вакансій</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:600;color:var(--text);letter-spacing:-0.5px">${avgThis || '—'}</div>
+          <div style="font-size:11px;margin:2px 0">${_wDiffF(avgThis, avgLast)}</div>
+          ${prevBadge(avgLast, true)}
+          <div style="font-size:10px;color:var(--muted-deep);margin-top:3px">середній бал</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:600;color:${weekThis.highQuality > 0 ? 'var(--green-bright)' : 'var(--text)'};letter-spacing:-0.5px">${weekThis.highQuality}</div>
+          <div style="font-size:11px;margin:2px 0">${_wDiff(weekThis.highQuality, weekLast.highQuality)}</div>
+          ${prevBadge(weekLast.highQuality, false)}
+          <div style="font-size:10px;color:var(--muted-deep);margin-top:3px">якісних ≥7</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Top Technologies card: keywords in high-score (≥6) vacancies
+  let topTechCardHtml = '';
+  {
+    const TECH_KW = [
+      'Looker','LookML','BigQuery','dbt','Power BI','Tableau','SQL','Python',
+      'Spark','Snowflake','Redshift','Airflow','Metabase','Superset','Databricks',
+      'Qlik','MicroStrategy','GoodData','AWS','GCP','Azure','Kafka','Elasticsearch',
+      'SaaS','Fintech','ETL','API'
+    ];
+    const techCount = {};
+    let hotTotal = 0;
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        if (v.score !== null && v.score >= 6) {
+          hotTotal++;
+          const text = ((v.summary || '') + ' ' + (v.title || '')).toLowerCase();
+          for (const kw of TECH_KW) {
+            if (text.includes(kw.toLowerCase())) {
+              techCount[kw] = (techCount[kw] || 0) + 1;
+            }
+          }
+        }
+      }
+    }
+    const sorted = Object.entries(techCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    if (hotTotal >= 2 && sorted.length >= 2) {
+      const maxCnt = sorted[0][1];
+      const techHtml = sorted.map(([kw, cnt]) => {
+        const pct = Math.round(cnt / hotTotal * 100);
+        const barW = Math.round(cnt / maxCnt * 100);
+        return `<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+          <span style="font-size:11.5px;color:var(--text-secondary);min-width:88px;flex-shrink:0">${esc(kw)}</span>
+          <div style="flex:1;background:rgba(255,255,255,.05);border-radius:3px;height:5px;overflow:hidden">
+            <div style="width:${barW}%;height:100%;background:var(--accent-bright);border-radius:3px;transition:width .3s"></div>
+          </div>
+          <span style="font-size:10.5px;color:var(--muted);min-width:42px;text-align:right">${cnt} · ${pct}%</span>
+        </div>`;
+      }).join('');
+      topTechCardHtml = `<div class="stat-card wide">
+        <div class="stat-label">Топ-технології у якісних вакансіях <span style="color:var(--muted-deep);font-weight:400;font-size:10px">score ≥6 · ${hotTotal} вак.</span></div>
+        <div style="margin-top:10px">${techHtml}</div>
+      </div>`;
+    }
+  }
+
+  // Unactioned top vacancies card: seen, score>=7, no status, no fav, no note
+  let unactionedCardHtml = '';
+  {
+    const seenSet = getSeenUrls();
+    const unacted = [];
+    for (const s of allData) {
+      if (SKIP.includes(s.name)) continue;
+      for (const v of s.items) {
+        if (
+          v.score !== null && v.score >= 7 &&
+          seenSet.has(v.url) &&
+          !statuses[v.url] &&
+          !favs.has(v.url) &&
+          !notesData[v.url]
+        ) {
+          unacted.push(v);
+        }
+      }
+    }
+    unacted.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+    if (unacted.length >= 2) {
+      const MAX_SHOW = 5;
+      const shown = unacted.slice(0, MAX_SHOW);
+      const extra = unacted.length - MAX_SHOW;
+      const rowsHtml = shown.map(v => {
+        const sc = v.score;
+        const scCls = sc >= 8 ? 'high' : 'mid';
+        const days = getAgeDays(v);
+        const ageBadge = days >= 0 ? `<span style="font-size:10px;color:var(--muted-deep)">${ageLabel(days)} тому</span>` : '';
+        return `<div class="stat-note-row">
+          <div class="stat-note-score ${scCls}">${sc}/10</div>
+          <div class="stat-note-body">
+            <a class="stat-note-title" href="${escA(v.url)}" target="_blank" rel="noopener" title="${escA(v.title)}">${esc(v.title)}</a>
+            <div class="stat-note-meta">${ageBadge}
+              <span style="font-size:10px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="toggleFav('${escA(v.url)}')" title="Додати в обране">★ обрати</span>
+              <span style="font-size:10px;color:var(--accent-bright);cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="setStatus('${escA(v.url)}','Applied')" title="Позначити як Applied">→ Applied</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      const extraNote = extra > 0 ? `<div style="font-size:11px;color:var(--muted-deep);padding:4px 0 0 2px">і ще ${extra}…</div>` : '';
+      unactionedCardHtml = `<div class="stat-card wide">
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Переглянуто, але без дії <span style="color:var(--muted-deep);font-weight:400;font-size:10px">score ≥7 · не подано · не обрано</span></span>
+          <span style="font-size:10px;color:var(--yellow)">${unacted.length} вак.</span>
+        </div>
+        <div class="stat-notes-list" style="margin-top:8px">${rowsHtml}${extraNote}</div>
+      </div>`;
+    }
   }
 
   document.getElementById('statsPanel').innerHTML = `
@@ -1940,15 +3468,25 @@ function renderStats() {
         <div class="stat-value" style="color:var(--accent)">${noteCount}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Pipeline</div>
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Pipeline</span>
+          ${filterPipelineStatus ? `<span class="score-filter-badge" onclick="quickFilterPipelineStatus('${escA(filterPipelineStatus)}')" title="Скинути фільтр"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ${esc(filterPipelineStatus)}</span>` : `<span style="font-size:10px;color:var(--muted-deep)">клік → фільтр</span>`}
+        </div>
         <div class="stat-value">${pipelineTotal}</div>
         <div class="sources-list" style="margin-top:6px">
-          <span class="source-chip" style="color:var(--accent)">Applied<b>${pipeline.Applied}</b></span>
-          <span class="source-chip" style="color:var(--green)">Interview<b>${pipeline.Interview}</b></span>
-          <span class="source-chip" style="color:#2ed573">Offer<b>${pipeline.Offer}</b></span>
-          <span class="source-chip" style="color:var(--muted)">Rejected<b>${pipeline.Rejected}</b></span>
+          ${['Applied','Interview','Offer','Rejected'].map((st, i) => {
+            const colors = ['var(--accent)','var(--green)','#2ed573','var(--muted)'];
+            const cnt = pipeline[st];
+            const isActive = filterPipelineStatus === st;
+            const chipStyle = isActive
+              ? `cursor:pointer;background:rgba(94,106,210,.15);border-color:rgba(113,112,255,.3);color:var(--accent-bright)`
+              : `cursor:pointer;color:${colors[i]}`;
+            return `<span class="source-chip" onclick="quickFilterPipelineStatus('${st}')" style="${chipStyle}" title="Клік — фільтрувати за статусом">${st}<b>${cnt}</b></span>`;
+          }).join('')}
         </div>
+        ${followupCount > 0 ? `<div style="margin-top:8px;font-size:11px;color:var(--yellow);display:flex;align-items:center;gap:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Потребує follow-up: <b style="color:var(--text-secondary)">${followupCount}</b> — <span style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="setFilter('followup')">переглянути</span></span></div>` : ''}
       </div>
+      ${funnelCardHtml}
       <div class="stat-card wide">
         <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
           <span>Розподіл оцінок (1–10)</span>
@@ -1956,16 +3494,44 @@ function renderStats() {
         </div>
         <div class="score-hist">${histHtml}</div>
         <div class="score-bar-legend">
-          <span><span class="legend-dot" style="background:var(--green-bright)"></span>Hot 8–10: ${scoreCounts[8]+scoreCounts[9]+scoreCounts[10]}</span>
-          <span><span class="legend-dot" style="background:var(--yellow)"></span>OK 4–7: ${scoreCounts[4]+scoreCounts[5]+scoreCounts[6]+scoreCounts[7]}</span>
+          <span><span class="legend-dot" style="background:var(--green-bright)"></span>Best 8–10: ${scoreCounts[8]+scoreCounts[9]+scoreCounts[10]}</span>
+          <span><span class="legend-dot" style="background:var(--green)"></span>Hot 6–7: ${scoreCounts[6]+scoreCounts[7]}</span>
+          <span><span class="legend-dot" style="background:var(--yellow)"></span>OK 4–5: ${scoreCounts[4]+scoreCounts[5]}</span>
           <span><span class="legend-dot" style="background:var(--red)"></span>Low 1–3: ${scoreCounts[1]+scoreCounts[2]+scoreCounts[3]}</span>
           <span><span class="legend-dot" style="background:rgba(255,255,255,0.08)"></span>N/A: ${none}</span>
         </div>
       </div>
       <div class="stat-card wide">
-        <div class="stat-label">Джерела</div>
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Джерела</span>
+          ${filterSource ? `<span class="score-filter-badge" onclick="quickFilterSource('${escA(filterSource)}')" title="Скинути фільтр за джерелом"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ${esc(filterSource)}</span>` : `<span style="font-size:10px;color:var(--muted-deep)">клік → фільтр</span>`}
+        </div>
         <div class="sources-list">${sourcesHtml}</div>
       </div>
+      ${sourceQualityCardHtml}
+      <div class="stat-card wide">
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Типи компаній</span>
+          ${filterType ? `<span class="score-filter-badge" onclick="quickFilterType('${escA(filterType)}')" title="Скинути фільтр"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ${esc(filterType)}</span>` : `<span style="font-size:10px;color:var(--muted-deep)">клік → фільтр</span>`}
+        </div>
+        <div class="sources-list">${typesHtml}</div>
+      </div>
+      <div class="stat-card wide">
+        <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Формат роботи</span>
+          ${filterWorkFormat ? `<span class="score-filter-badge" onclick="quickFilterWorkFormat('${escA(filterWorkFormat)}')" title="Скинути фільтр"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ${esc(filterWorkFormat)}</span>` : `<span style="font-size:10px;color:var(--muted-deep)">клік → фільтр</span>`}
+        </div>
+        <div class="sources-list">${workFmtHtml}</div>
+      </div>
+      ${salaryCardHtml}
+      ${ageCardHtml}
+      ${activityCardHtml}
+      ${scoreTrendCardHtml}
+      ${weeklyCardHtml}
+      ${topTechCardHtml}
+      ${unactionedCardHtml}
+      ${notesCardHtml}
+      ${historyCardHtml}
     </div>`;
 }
 
@@ -1987,6 +3553,16 @@ function setFocus(idx) {
   card.classList.add('kb-focus');
   card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Show/hide back-to-top button based on scroll position
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('backToTopBtn');
+  if (btn) btn.classList.toggle('visible', window.scrollY > 400);
+}, { passive: true });
 
 function showKbHelp() {
   const existing = document.querySelector('.kb-overlay');
@@ -2019,7 +3595,14 @@ function showKbHelp() {
     <div class="kb-row"><span class="kb-key">r</span><span class="kb-desc">Оновити список</span></div>
     <div class="kb-row"><span class="kb-key">v</span><span class="kb-desc">Перемкнути вигляд (картки/список)</span></div>
     <div class="kb-row"><span class="kb-key">h</span><span class="kb-desc">Сховати/показати застарілі</span></div>
+    <div class="kb-row"><span class="kb-key">q</span><span class="kb-desc">Показати/сховати панель Stats</span></div>
+    <div class="kb-row"><span class="kb-key">p</span><span class="kb-desc">Відкрити/закрити нотатник</span></div>
+    <div class="kb-row"><span class="kb-key">g</span><span class="kb-desc">Прокрутити на початок сторінки</span></div>
     <div class="kb-row"><span class="kb-key">/</span><span class="kb-desc">Фокус на пошук</span></div>
+    <div class="kb-row" style="padding-top:8px;margin-top:4px;border-top:1px solid var(--border-subtle)"><span style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Синтаксис пошуку</span></div>
+    <div class="kb-row"><span class="kb-key" style="min-width:64px;font-size:0.68rem">word1 word2</span><span class="kb-desc">AND — обидва мають бути присутні</span></div>
+    <div class="kb-row"><span class="kb-key" style="min-width:64px;font-size:0.68rem">w1 OR w2</span><span class="kb-desc">OR — хоча б одне слово</span></div>
+    <div class="kb-row"><span class="kb-key" style="min-width:64px;font-size:0.68rem">-слово</span><span class="kb-desc">Виключити вакансії з цим словом</span></div>
     <div class="kb-row"><span class="kb-key">?</span><span class="kb-desc">Показати цю довідку</span></div>
     <div class="kb-row"><span class="kb-key">Esc</span><span class="kb-desc">Закрити / зняти фокус</span></div>
   </div>`;
@@ -2038,7 +3621,8 @@ document.addEventListener('keydown', (e) => {
   }
 
   const cards = getVisibleCards();
-  if (!cards.length && e.key !== '?') return;
+  const noCardsOk = new Set(['?', 'q', 'g', 'p', 'c', 'r', 'v', 'h', '/', '1','2','3','4','5','6','7','8']);
+  if (!cards.length && !noCardsOk.has(e.key)) return;
 
   switch (e.key) {
     case 'j':
@@ -2108,9 +3692,13 @@ document.addEventListener('keydown', (e) => {
       showKbHelp();
       break;
     case 'Escape':
-      // Clear focus
-      cards.forEach(c => c.classList.remove('kb-focus'));
-      focusIdx = -1;
+      // Close scratch pad if open, else clear card focus
+      if (_scratchPadOpen) {
+        toggleScratchPad();
+      } else {
+        cards.forEach(c => c.classList.remove('kb-focus'));
+        focusIdx = -1;
+      }
       break;
     // Number keys: switch active filter
     case '1': setFilter('all'); break;
@@ -2130,6 +3718,18 @@ document.addEventListener('keydown', (e) => {
     // r: manual refresh (poll for new vacancies right now)
     case 'r':
       poll();
+      break;
+    // g: scroll to top
+    case 'g':
+      scrollToTop();
+      break;
+    // q: toggle Stats panel
+    case 'q':
+      toggleStats();
+      break;
+    // p: toggle global scratch pad
+    case 'p':
+      toggleScratchPad();
       break;
   }
 });
@@ -2189,44 +3789,173 @@ async function reanalyze(url) {
   }
 }
 
+// Copy vacancy details to clipboard as formatted text
+async function copyVacancy(url) {
+  // Find the vacancy in allData
+  let v = null;
+  let srcName = '';
+  for (const s of allData) {
+    const found = s.items.find(item => item.url === url);
+    if (found) { v = found; srcName = s.name; break; }
+  }
+  if (!v) return;
+
+  const lines = [];
+  lines.push(`📌 ${v.title}`);
+  const scorePart = v.score !== null ? `Score: ${v.score}/10` : '';
+  const typePart = v.type || '';
+  const meta = [typePart, scorePart].filter(Boolean).join(' | ');
+  if (meta) lines.push(`💼 ${meta}`);
+  if (v.salary && v.salary !== 'Не вказана') lines.push(`💰 ${v.salary}`);
+  if (v.remote) lines.push(`🌐 ${v.remote}`);
+  if (v.published || v.date) lines.push(`📅 ${v.published || v.date}`);
+  if (v.summary) { lines.push(''); lines.push(v.summary); }
+  const note = getNote(url);
+  if (note) { lines.push(''); lines.push(`📝 ${note}`); }
+  lines.push('');
+  lines.push(`🔗 ${url}`);
+
+  const text = lines.join('\n');
+  const btn = document.querySelector(`.card[data-url="${CSS.escape(url)}"] .copy-btn`)
+    || [...document.querySelectorAll('.card')].find(c => c.dataset.url === url)?.querySelector('.copy-btn');
+
+  try {
+    await navigator.clipboard.writeText(text);
+    if (btn) {
+      btn.classList.add('copied');
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Скопійовано!`;
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Копіювати`;
+      }, 2000);
+    }
+  } catch(e) {
+    // Fallback for browsers without clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (btn) {
+      btn.classList.add('copied');
+      btn.textContent = 'Скопійовано!';
+      setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Копіювати`; }, 2000);
+    }
+  }
+}
+
+const _clipboardIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>`;
+
 function exportCSV() {
   const statuses = getStatuses();
   const favs = getFavUrls();
   const notesData = getNotes();
-  const rows = [['Source', 'Title', 'URL', 'Score', 'Type', 'Salary', 'Remote', 'Date', 'Status', 'Pipeline', 'Favorite', 'Note']];
+  const allStatusDates = getStatusDates();
+  const isFiltered = activeFilter !== 'all' || !!searchQuery || activeScoreExact !== null
+    || scoreMin > 0 || !!filterType || filterRemote || filterSalary
+    || !!filterSource || !!filterWorkFormat || !!filterPipelineStatus || hideStale;
+  const rows = [['Source', 'Title', 'URL', 'Score', 'Summary', 'Type', 'Salary', 'Remote', 'Date', 'Status', 'Pipeline', 'Applied Date', 'Interview Date', 'Favorite', 'Note']];
 
+  const csvEsc = (s) => {
+    s = (s || '').replace(/"/g, '""');
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+  };
+
+  let exportCount = 0;
   for (const section of allData) {
     if (SKIP.includes(section.name)) continue;
+    if (filterSource && section.name !== filterSource) continue;
     for (const v of section.items) {
-      const csvEsc = (s) => {
-        s = (s || '').replace(/"/g, '""');
-        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
-      };
+      if (isFiltered && (!passFilter(v) || !matchesSearch(v) || (hideStale && isStale(v)))) continue;
+      const urlDates = allStatusDates[v.url] || {};
       rows.push([
         csvEsc(section.name),
         csvEsc(v.title),
         csvEsc(v.url),
         v.score !== null ? v.score : '',
+        csvEsc(v.summary),
         csvEsc(v.type),
         csvEsc(v.salary),
         csvEsc(v.remote),
         csvEsc(v.published || v.date || ''),
         csvEsc(v.status || 'active'),
         csvEsc(statuses[v.url] || ''),
+        csvEsc(urlDates.Applied || ''),
+        csvEsc(urlDates.Interview || ''),
         favs.has(v.url) ? 'yes' : '',
         csvEsc(notesData[v.url] || ''),
       ].join(','));
+      exportCount++;
     }
   }
 
   const csv = rows.join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
+  const blobUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `vacancies-${new Date().toISOString().slice(0,10)}.csv`;
+  a.href = blobUrl;
+  const suffix = isFiltered ? '-filtered' : '';
+  a.download = `vacancies${suffix}-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(blobUrl);
+
+  // Brief button feedback
+  const btn = document.querySelector('.action-btn[onclick="exportCSV()"]');
+  if (btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M20 6 9 17l-5-5"/></svg> ${exportCount} рядків`;
+    setTimeout(() => { btn.innerHTML = orig; }, 2500);
+  }
+}
+
+// localStorage backup / restore
+const _LS_BACKUP_KEYS = [
+  'seenUrls', 'favUrls', 'vacancyStatuses', 'vacancyStatusDates', 'vacancyNotes',
+  'collapsedSections', 'hideStale', 'filterRemote', 'filterSalary', 'filterSource',
+  'filterWorkFormat', 'filterType', 'viewMode', 'globalNote'
+];
+
+function exportUserData() {
+  const raw = {};
+  for (const k of _LS_BACKUP_KEYS) {
+    const v = localStorage.getItem(k);
+    if (v !== null) raw[k] = v;
+  }
+  const payload = JSON.stringify({ _v: 1, _ts: new Date().toISOString(), data: raw }, null, 2);
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([payload], { type: 'application/json' })),
+    download: `job-searcher-backup-${new Date().toISOString().slice(0, 10)}.json`
+  });
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importUserData() {
+  const input = Object.assign(document.createElement('input'), { type: 'file', accept: '.json' });
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    try {
+      const obj = JSON.parse(await file.text());
+      if (!obj._v || !obj.data) { alert('Невалідний файл бекапу'); return; }
+      const date = obj._ts ? obj._ts.slice(0, 10) : '?';
+      const noteCount = (() => {
+        try { return Object.keys(JSON.parse(obj.data.vacancyNotes || '{}')).length; } catch { return 0; }
+      })();
+      const favCount = (() => {
+        try { return JSON.parse(obj.data.favUrls || '[]').length; } catch { return 0; }
+      })();
+      const statusCount = (() => {
+        try { return Object.keys(JSON.parse(obj.data.vacancyStatuses || '{}')).length; } catch { return 0; }
+      })();
+      if (!confirm(`Відновити дані з бекапу від ${date}?\n\nНотатки: ${noteCount}\nОбрані: ${favCount}\nПайплайн-статуси: ${statusCount}\n\nПоточні дані буде перезаписано.`)) return;
+      for (const [k, v] of Object.entries(obj.data)) localStorage.setItem(k, v);
+      location.reload();
+    } catch (err) {
+      alert('Помилка читання файлу: ' + err.message);
+    }
+  };
+  input.click();
 }
 
 // Bulk delete: delete all currently visible (filtered/searched) vacancies
@@ -2357,6 +4086,140 @@ async function triggerCheck() {
   }, 300000);
 }
 
+// "Analyze unanalyzed" batch trigger
+let _analyzeBatchPollTimer = null;
+
+function _countUnanalyzed() {
+  let count = 0;
+  for (const s of allData) {
+    if (SKIP.includes(s.name)) continue;
+    for (const v of s.items) {
+      if (v.score === null && !v.summary) count++;
+    }
+  }
+  return count;
+}
+
+function updateAnalyzeBatchBtn() {
+  const btn = document.getElementById('analyzeBatchBtn');
+  if (!btn) return;
+  const count = _countUnanalyzed();
+  btn.classList.toggle('hidden', count === 0);
+  if (count > 0 && !btn.classList.contains('analyzing')) {
+    const icon = document.getElementById('analyzeBatchIcon');
+    btn.innerHTML = (icon ? icon.outerHTML : '') + ` Аналізувати (${count})`;
+  }
+}
+
+async function triggerAnalyzeBatch() {
+  const btn = document.getElementById('analyzeBatchBtn');
+  const icon = document.getElementById('analyzeBatchIcon');
+  btn.classList.add('analyzing');
+  icon.classList.add('spinning');
+  btn.innerHTML = icon.outerHTML + ' Аналізуємо...';
+
+  try {
+    await fetch('/api/analyze-batch', { method: 'POST' });
+  } catch(e) {}
+
+  clearInterval(_analyzeBatchPollTimer);
+  _analyzeBatchPollTimer = setInterval(async () => {
+    try {
+      const r = await fetch('/api/analyze-batch/status');
+      const s = await r.json();
+      if (!s.running) {
+        clearInterval(_analyzeBatchPollTimer);
+        _analyzeBatchPollTimer = null;
+        await load();
+        await loadStatus();
+        const b = document.getElementById('analyzeBatchBtn');
+        const ic = document.getElementById('analyzeBatchIcon');
+        if (b && ic) {
+          b.classList.remove('analyzing');
+          ic.classList.remove('spinning');
+          updateAnalyzeBatchBtn();
+        }
+      }
+    } catch(e) {}
+  }, 4000);
+
+  // Safety fallback: restore after 10 min
+  setTimeout(() => {
+    clearInterval(_analyzeBatchPollTimer);
+    const b = document.getElementById('analyzeBatchBtn');
+    const ic = document.getElementById('analyzeBatchIcon');
+    if (b && ic) {
+      b.classList.remove('analyzing');
+      ic.classList.remove('spinning');
+      updateAnalyzeBatchBtn();
+    }
+  }, 600000);
+}
+
+// ============================================================
+// GLOBAL SCRATCH PAD
+// ============================================================
+let _scratchPadOpen = false;
+let _scratchSaveTimer = null;
+
+function _initScratchPad() {
+  const saved = localStorage.getItem('globalNote') || '';
+  const ta = document.getElementById('scratchPadText');
+  if (ta) ta.value = saved;
+  _updateScratchPadChars(saved.length);
+  _updateScratchPadBtn(saved);
+}
+
+function _updateScratchPadBtn(text) {
+  if (text === undefined) text = localStorage.getItem('globalNote') || '';
+  const btn = document.getElementById('scratchPadBtn');
+  if (btn) btn.classList.toggle('has-content', text.trim().length > 0);
+}
+
+function _updateScratchPadChars(len) {
+  const el = document.getElementById('scratchPadChars');
+  if (!el) return;
+  const rem = len % 10;
+  const suffix = len === 1 ? 'символ' : (rem >= 2 && rem <= 4 && !(len >= 12 && len <= 14)) ? 'символи' : 'символів';
+  el.textContent = len + ' ' + suffix;
+}
+
+function toggleScratchPad() {
+  _scratchPadOpen = !_scratchPadOpen;
+  const panel = document.getElementById('scratchPadPanel');
+  if (panel) panel.classList.toggle('visible', _scratchPadOpen);
+  if (_scratchPadOpen) {
+    const ta = document.getElementById('scratchPadText');
+    if (ta) setTimeout(() => ta.focus(), 60);
+  }
+}
+
+function onScratchPadInput(ta) {
+  _updateScratchPadChars(ta.value.length);
+  clearTimeout(_scratchSaveTimer);
+  _scratchSaveTimer = setTimeout(() => {
+    localStorage.setItem('globalNote', ta.value);
+    _updateScratchPadBtn(ta.value);
+    // Show "збережено" flash
+    const saved = document.getElementById('scratchPadSaved');
+    if (saved) {
+      saved.classList.add('show');
+      setTimeout(() => saved.classList.remove('show'), 1200);
+    }
+  }, 500);
+}
+
+function clearScratchPad() {
+  if (!(localStorage.getItem('globalNote') || '').trim()) return;
+  if (!confirm('Очистити нотатник? Це незворотньо видалить всі записи.')) return;
+  const ta = document.getElementById('scratchPadText');
+  if (ta) { ta.value = ''; _updateScratchPadChars(0); }
+  localStorage.removeItem('globalNote');
+  _updateScratchPadBtn('');
+}
+
+_initScratchPad();
+
 load();
 loadStatus();
 setInterval(poll, REFRESH);
@@ -2377,6 +4240,22 @@ document.addEventListener('visibilitychange', () => {
 if (activeView === 'list') setView('list');
 // Restore hide-stale toggle state
 if (hideStale) document.getElementById('hideStaleBtn').classList.add('toggled');
+// Restore remote filter toggle state
+if (filterRemote) document.getElementById('remoteFilterBtn').classList.add('toggled');
+// Restore salary filter toggle state
+if (filterSalary) document.getElementById('salaryFilterBtn').classList.add('toggled');
+// Restore sort preference (update button visual state; data isn't loaded yet so no render)
+if (activeSort !== 'default') {
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  const _sortBtn = document.querySelector(`.sort-btn[onclick="setSort('${activeSort}')"]`);
+  if (_sortBtn) _sortBtn.classList.add('active');
+}
+// Restore scoreMin preference (update button visual state)
+if (scoreMin > 0) {
+  document.querySelectorAll('.scoremin-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.min) === scoreMin);
+  });
+}
 
 // Sticky controls: add shadow when page is scrolled past the header
 (function() {

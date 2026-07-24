@@ -187,6 +187,59 @@ def api_status():
                     "sources": sources, "errors": errors})
 
 
+@app.route("/api/history")
+def api_history():
+    """Return history of recent check runs from check.log."""
+    log_file = os.path.join(BASE_DIR, "check.log")
+    if not os.path.exists(log_file):
+        return jsonify({"runs": []})
+
+    with open(log_file, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    runs = []
+    current = None
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        # Lines without a timestamp (e.g. "Done. Added N vacancies...")
+        if not line.startswith('['):
+            if current is not None:
+                done_m = re.search(r'Done\. Added (\d+) vacanc', line)
+                if done_m:
+                    current['added'] = int(done_m.group(1))
+                    skip_m = re.search(r'skipped (\d+)', line)
+                    if skip_m:
+                        current['skipped'] = int(skip_m.group(1))
+            continue
+
+        ts_m = re.match(r'^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}):\d{2}\]', line)
+        if not ts_m:
+            continue
+        ts = ts_m.group(1)
+
+        if 'Starting vacancy check' in line:
+            if current and current.get('date'):
+                runs.append(current)
+            current = {'date': ts, 'added': None, 'skipped': 0, 'found': 0}
+            continue
+
+        if current is None:
+            continue
+
+        found_m = re.search(r'Found (\d+) new on', line)
+        if found_m:
+            current['found'] = current.get('found', 0) + int(found_m.group(1))
+
+    if current and current.get('date'):
+        runs.append(current)
+
+    valid_runs = [r for r in runs if r.get('date')]
+    return jsonify({"runs": valid_runs[-10:][::-1]})
+
+
 @app.route("/api/vacancies", methods=["DELETE"])
 def api_delete():
     url = request.json.get("url", "")
@@ -196,6 +249,7 @@ def api_delete():
 
 
 _check_running = False
+_analyze_running = False
 
 
 @app.route("/api/check", methods=["POST"])
@@ -226,6 +280,40 @@ def api_check():
     return jsonify({"ok": True, "msg": "started"})
 
 
+@app.route("/api/analyze-batch", methods=["POST"])
+def api_analyze_batch():
+    """Trigger analyze_new.py in a background thread to analyze vacancies missing scores."""
+    global _analyze_running
+    if _analyze_running:
+        return jsonify({"ok": True, "msg": "already running"})
+
+    import subprocess
+    import threading
+
+    def run():
+        global _analyze_running
+        _analyze_running = True
+        try:
+            subprocess.run(
+                [sys.executable, os.path.join(BASE_DIR, "analyze_new.py")],
+                capture_output=True,
+                timeout=600,
+            )
+        except Exception:
+            pass
+        finally:
+            _analyze_running = False
+
+    threading.Thread(target=run, daemon=True).start()
+    return jsonify({"ok": True, "msg": "started"})
+
+
+@app.route("/api/analyze-batch/status", methods=["GET"])
+def api_analyze_batch_status():
+    """Return whether analyze_new.py is currently running."""
+    return jsonify({"running": _analyze_running})
+
+
 @app.route("/api/check/status", methods=["GET"])
 def api_check_status():
     """Return whether check_new.py is currently running."""
@@ -240,6 +328,7 @@ def api_reanalyze():
     title = data.get("title", "")
     if not url or not title:
         return jsonify({"ok": False, "error": "url and title required"}), 400
+    from check_new import analyze_vacancy
     result = analyze_vacancy(title, url)
     if result:
         return jsonify({"ok": True, "analysis": result})
